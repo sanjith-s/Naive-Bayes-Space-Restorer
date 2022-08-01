@@ -11,6 +11,10 @@ from math import log10
 
 import nltk
 
+ERROR_INIT_OVERSPECIFIED = """
+Only one of train_texts and load_path should be specified.
+Do you want to train a new model or load from a pickle file?"""
+
 
 # ====================
 class NBSpaceRestorer():
@@ -21,16 +25,23 @@ class NBSpaceRestorer():
                  save_path: str = None,
                  load_path: str = None,
                  L: int = 20,
-                 lambda_: int = 10):
+                 lambda_: float = 10.0,
+                 ignore_case: bool = True):
         """Initialize a new class instance"""
 
         self.unigram_freqs = Counter()
         self.bigram_freqs = Counter()
         self.L = L
         self.lambda_ = lambda_
+
+        if train_texts is not None and load_path is not None:
+            raise ValueError(ERROR_INIT_OVERSPECIFIED)
+        
         # Train from texts
         if train_texts:
             for text in train_texts:
+                if ignore_case:
+                    text = text.lower()
                 words = text.split()
                 self.unigram_freqs.update(words)
                 bigrams = [f'{first_word}_{second_word}' 
@@ -40,39 +51,13 @@ class NBSpaceRestorer():
                 with open(save_path, 'wb') as f:
                     pickle.dump(
                         {'unigram_freqs': self.unigram_freqs, 'bigram_freqs': self.bigram_freqs},
-                        f)
+                        f
+                    )
         # Load unigram and bigram frequences from a file
         if load_path:
             freqs = pickle.load(load_path)
             self.unigram_freqs = freqs['unigram_freqs']
             self.bigram_freqs = freqs['bigram_freqs']
-
-    # ====================
-    @classmethod
-    def from_texts(self,
-                   train_texts: list,
-                   save_path: str = None,
-                   L: int = 20,
-                   lambda_: int = 10):
-        """Define a new class instance from a list of training texts
-        
-        Save unigram and bigram frequences to a pickle file, if specified"""
-
-        return NBSpaceRestorer(
-            train_texts=train_texts, save_path=save_path,
-            L=L, lambda_=lambda_
-        )
-
-    # ====================
-    @classmethod
-    def from_pickle(self, 
-                    load_path: str,
-                    L: int = 20,
-                    lambda_: int = 10):
-        """Define a new class instance from a pickle file containing unigram
-        and bigram frequences"""
-
-        return NBSpaceRestorer(load_path=load_path, L=L, lambda_=lambda_)
 
     # ====================
     def get_pdists(self):
@@ -115,7 +100,7 @@ class NBSpaceRestorer():
         else:
             # For unknown words, assign lower probabilities for longer words
             # The number 10 is arbitrary and can be adjusted
-            return 10./(self.N * 10 ** len(word))
+            return self.lambda_/(self.N * 10 ** len(word))
 
     # ====================
     def cPw(self, word: str, prev: str) -> float:
