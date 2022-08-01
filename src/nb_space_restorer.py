@@ -33,7 +33,6 @@ class NBSpaceRestorer():
         self.bigram_freqs = Counter()
         self.L = L
         self.lambda_ = lambda_
-
         if train_texts is not None and load_path is not None:
             raise ValueError(ERROR_INIT_OVERSPECIFIED)
         
@@ -58,6 +57,9 @@ class NBSpaceRestorer():
             freqs = pickle.load(load_path)
             self.unigram_freqs = freqs['unigram_freqs']
             self.bigram_freqs = freqs['bigram_freqs']
+        
+        # Get probability distributions
+        self.get_pdists()
 
     # ====================
     def get_pdists(self):
