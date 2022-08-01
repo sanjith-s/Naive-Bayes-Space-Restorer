@@ -6,6 +6,8 @@ import operator
 import pickle
 from collections import Counter
 from functools import reduce
+from memo.memo import memo
+from math import log10
 
 import nltk
 
@@ -47,25 +49,35 @@ class NBSpaceRestorer():
 
     # ====================
     @classmethod
-    def from_texts(self, train_texts: list, save_path: str = None):
+    def from_texts(self,
+                   train_texts: list,
+                   save_path: str = None,
+                   L: int = 20,
+                   lambda_: int = 10):
         """Define a new class instance from a list of training texts
         
         Save unigram and bigram frequences to a pickle file, if specified"""
 
-        return NBSpaceRestorer(train_texts=train_texts, save_path=save_path)
+        return NBSpaceRestorer(
+            train_texts=train_texts, save_path=save_path,
+            L=L, lambda_=lambda_
+        )
 
     # ====================
     @classmethod
-    def from_pickle(self, load_path: str):
-        """Define a new class instance pickle file containing unigram and
-        bigram frequences"""
+    def from_pickle(self, 
+                    load_path: str,
+                    L: int = 20,
+                    lambda_: int = 10):
+        """Define a new class instance from a pickle file containing unigram
+        and bigram frequences"""
 
-        return NBSpaceRestorer(load_path=load_path)
+        return NBSpaceRestorer(load_path=load_path, L=L, lambda_=lambda_)
 
     # ====================
     def get_pdists(self):
         """Get unigram and bigram probability distributions from unigram
-        and bigram frequences"""
+        and bigram frequencies"""
 
         # Get total numbers of unigrams and bigrams
         self.N = sum(self.unigram_freqs.values())

@@ -1,0 +1,3 @@
+python-memo
+nltk
+pandas
