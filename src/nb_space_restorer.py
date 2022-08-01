@@ -12,8 +12,7 @@ from typing import Union
 
 import nltk
 
-from nb_helper import Str_or_List, get_tqdm
-from src.nb_helper import str_or_list_to_list
+from nb_helper import Str_or_List, get_tqdm, str_or_list_to_list
 
 tqdm_ = get_tqdm()
 
