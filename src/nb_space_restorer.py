@@ -8,8 +8,14 @@ from collections import Counter
 from functools import reduce
 from memo.memo import memo
 from math import log10
+from typing import Union
 
 import nltk
+
+from nb_helper import Str_or_List, get_tqdm
+from src.nb_helper import str_or_list_to_list
+
+tqdm_ = get_tqdm()
 
 ERROR_INIT_OVERSPECIFIED = """
 Only one of train_texts and load_path should be specified.
@@ -172,12 +178,17 @@ class NBSpaceRestorer():
         return all_words
 
     # ====================
-    def restore_spaces(self, text: str) -> str:
-        """Restore spaces to a sequence of characters"""
+    def restore_spaces(self, texts: Str_or_List) -> str:
+        """Restore spaces to a sequence of characters, or a list of sequences
+        of characters"""
 
-        words = self.segment(text)
-        joined = ' '.join(words).strip()
-        return joined
+        texts = str_or_list_to_list(texts)
+        restored = []
+        for text in tqdm_(texts):
+            words = self.segment(text)
+            joined = ' '.join(words).strip()
+            restored.append(joined)
+        return restored
 
     # ====================
     def all_words_seen(self, text: str) -> bool:

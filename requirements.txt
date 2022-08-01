@@ -1,3 +1,4 @@
 python-memo
 nltk
 pandas
+tqdm
