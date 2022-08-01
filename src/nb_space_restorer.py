@@ -60,7 +60,7 @@ class NBSpaceRestorer():
         # Load unigram and bigram frequences from a file
         if load_path:
             with open(load_path, 'rb') as f:
-                freqs = pickle.load()
+                freqs = pickle.load(f)
             self.unigram_freqs = freqs['unigram_freqs']
             self.bigram_freqs = freqs['bigram_freqs']
         
