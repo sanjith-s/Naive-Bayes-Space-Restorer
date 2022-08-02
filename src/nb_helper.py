@@ -1,21 +1,8 @@
 from typing import Union
 from tqdm import tqdm as non_notebook_tqdm
 from tqdm.notebook import tqdm as notebook_tqdm
-try:
-    from IPython.core.display import HTML
-except:
-    pass
 
 Str_or_List = Union[str, list]
-
-
-# ====================
-def str_or_list_to_list(input_: Str_or_List) -> list:
-
-    if isinstance(input_, str):
-        return [input_]
-    elif isinstance(input_, list):
-        return input_
 
 
 # ====================
