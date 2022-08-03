@@ -2,3 +2,4 @@ python-memo
 nltk
 pandas
 tqdm
+psutil

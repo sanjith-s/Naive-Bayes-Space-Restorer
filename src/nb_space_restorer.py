@@ -4,6 +4,7 @@ Defines the NBSpaceRestorer class"""
 
 import operator
 import pickle
+import psutil
 from collections import Counter
 from functools import reduce
 from memo.memo import memo
@@ -21,6 +22,7 @@ Do you want to train a new model or load from a pickle file?"""
 ERROR_INIT_UNDERSPECIFIED = """
 You must define either train_texts or load_path to initialize
 an instance of NBSpaceRestorer."""
+MESSAGE_RAM_IN_USE = "RAM currently in use: {ram_in_use}%"
 
 
 # ====================
@@ -60,8 +62,9 @@ class NBSpaceRestorer():
                                     frequencies using load_path.
 
         L: int = 20                 The maximum possible word length to
-                                    consider during inference. Higher values of
-                                    L lead to longer inference time and ???.
+                                    consider during inference. Inference
+                                    time increases with L as more probabilities
+                                    need to be calculated.
 
         lambda_ = 10.0              The smoothing parameter to use during
                                     inference. Higher values of lambda_ cause
@@ -249,7 +252,11 @@ class NBSpaceRestorer():
             return self.restore_doc(texts)
         if isinstance(texts, list):
             restored = []
-            for text in tqdm_(texts):
+            texts_ = tqdm_(texts)
+            for text in texts_:
                 restored_ = self.restore_doc(text)
                 restored.append(restored_)
+                texts_.set_postfix({
+                    'ram_usage': f"{psutil.virtual_memory().percent}%"
+                })
             return restored
