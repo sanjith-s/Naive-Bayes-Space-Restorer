@@ -22,6 +22,9 @@ Do you want to train a new model or load from a pickle file?"""
 ERROR_INIT_UNDERSPECIFIED = """
 You must define either train_texts or load_path to initialize
 an instance of NBSpaceRestorer."""
+WARNING_IGNORE_CASE_IGNORED = """
+Warning: ignore_case option can only be specified in initial
+model training. ignore_case option was ignored."""
 MESSAGE_RAM_IN_USE = "RAM currently in use: {ram_in_use}%"
 
 
@@ -72,10 +75,11 @@ class NBSpaceRestorer():
                                     words not learnt during training.
 
         ignore_case: bool           Ignore case during training (so that e.g.
-            = False                 'banana', 'Banana', and 'BANANA' are all
+            = None                 'banana', 'Banana', and 'BANANA' are all
                                     counted as occurences of 'banana').
                                     Ignored if loading previously saved
                                     frequencies using load_path.
+                                    Set to True by default.
         """
 
         self.unigram_freqs = Counter()
@@ -89,6 +93,8 @@ class NBSpaceRestorer():
 
         # Train from texts
         if train_texts:
+            if ignore_case is None:
+                ignore_case = True
             for text in train_texts:
                 if ignore_case:
                     text = text.lower()
@@ -107,6 +113,8 @@ class NBSpaceRestorer():
                         }, f)
         # Load unigram and bigram frequences from a file
         if load_path:
+            if ignore_case is not None:
+                print(WARNING_IGNORE_CASE_IGNORED)
             with open(load_path, 'rb') as f:
                 freqs = pickle.load(f)
             self.unigram_freqs = freqs['unigram_freqs']
