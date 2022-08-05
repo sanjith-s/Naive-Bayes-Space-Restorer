@@ -26,6 +26,8 @@ WARNING_IGNORE_CASE_IGNORED = """Warning: ignore_case option
 can only be specified in initial model training. ignore_case
 option was ignored."""
 MESSAGE_RAM_IN_USE = "RAM currently in use: {ram_in_use}%"
+MESSAGE_TRAINING_COMPLETE = "Training complete."
+MESSAGE_FINISHED_LOADING = "Finished loading model."
 
 
 # ====================
@@ -111,6 +113,7 @@ class NBSpaceRestorer():
                             'unigram_freqs': self.unigram_freqs,
                             'bigram_freqs': self.bigram_freqs
                         }, f)
+            print(MESSAGE_TRAINING_COMPLETE)
         # Load unigram and bigram frequences from a file
         if load_path:
             if ignore_case is not None:
@@ -119,7 +122,7 @@ class NBSpaceRestorer():
                 freqs = pickle.load(f)
             self.unigram_freqs = freqs['unigram_freqs']
             self.bigram_freqs = freqs['bigram_freqs']
-
+            print(MESSAGE_FINISHED_LOADING)
         # Get probability distributions
         self.get_pdists()
 
