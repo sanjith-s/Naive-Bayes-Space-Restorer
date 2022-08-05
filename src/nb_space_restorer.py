@@ -16,15 +16,15 @@ from nb_helper import Str_or_List, get_tqdm
 
 tqdm_ = get_tqdm()
 
-ERROR_INIT_OVERSPECIFIED = """Only one of train_texts and
-load_path should be specified. Do you want to train a new
-model or load from a pickle file?"""
-ERROR_INIT_UNDERSPECIFIED = """You must define either
-train_texts or load_path to initialize an instance of
-NBSpaceRestorer."""
-WARNING_IGNORE_CASE_IGNORED = """Warning: ignore_case option
-can only be specified in initial model training. ignore_case
-option was ignored."""
+ERROR_INIT_OVERSPECIFIED = """\
+Only one of train_texts and load_path should be specified. \
+Do you want to train a new model or load from a pickle file?"""
+ERROR_INIT_UNDERSPECIFIED = """\
+You must define either train_texts or load_path to initialize \
+an instance of NBSpaceRestorer."""
+WARNING_IGNORE_CASE_IGNORED = """\
+Warning: ignore_case option can only be specified in initial \
+model training. ignore_case option was ignored."""
 MESSAGE_RAM_IN_USE = "RAM currently in use: {ram_in_use}%"
 MESSAGE_TRAINING_COMPLETE = "Training complete."
 MESSAGE_FINISHED_LOADING = "Finished loading model."

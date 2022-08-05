@@ -106,6 +106,26 @@ class NBSpaceRestorer():
 
 #### Example 1: Train a model with new texts
 
+```python
+from google.colab import drive
+drive.mount('/content/drive')
+
+TRAIN_PATH = 'drive/MyDrive/PAPER/data/ted_talks/ted_train.csv'
+train_df = pd.read_csv(TRAIN_PATH)
+train_texts = train_df['all_cleaned'].to_list()
+
+NB_Ted = NBSpaceRestorer(
+    train_texts=train_texts,
+    save_path='drive/MyDrive/PAPER/models/01_nb/ted_train.pickle',
+    L=20,
+    lambda_=10.0,
+    ignore_case=True
+)
+```
+
+
+
+
 #### Example 2: Load a trained model
 
 #### Example 3: Run inference on new texts
