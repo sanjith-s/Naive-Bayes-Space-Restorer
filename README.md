@@ -47,7 +47,7 @@ from nb_space_restorer import NBSpaceRestorer
 
 ## How to use
 
-### Initialize a class instance
+### Initialize an instance of NBSpaceRestorer
 
 ```python
 # ====================
@@ -123,15 +123,93 @@ NB_Ted = NBSpaceRestorer(
 )
 ```
 
-
-
+<img src="readme-img/example1output.PNG"></img>
 
 #### Example 2: Load a trained model
 
-#### Example 3: Run inference on new texts
+Hyperparameters _L_ and λ are not applied until inference, so new values can be specified when loading previous trained models.
 
-#### Example 4: 
+`ignore_case` is applied during traning, so should not be specified when training a new model (if it is specified, it will be ignored).
 
+```python
+NB_Ted = NBSpaceRestorer(
+    load_path='drive/MyDrive/PAPER/models/01_nb/ted_train.pickle',
+    L=15,
+    lambda_=12,
+    ignore_case=False
+)
+```
+
+<img src="readme-img/example2output.PNG"></img>
+
+#### Example 3: Change model hyperparameters
+
+Hyperparameters _L_ and λ are not applied until inference, so they can be changed at any time.
+
+```python
+NB_Ted.L = 17
+NB_Ted.lambda_ = 14
+```
+
+### Run inference on new texts
+
+```python
+    # ====================
+    def restore(self, texts: Str_or_List) -> str:
+        """Restore spaces to either a single string, or a list of
+        strings.
+
+        If the input is a single string, the output will also be
+        a single string.
+        If the input is a list of strings, the output will be a
+        list of the same length as the input.
+
+        Required arguments:
+        -------------------
+        texts: Str_or_List          Either a single string of input
+                                    characters, or a list of strings
+                                    of input characters.
+                                    Input strings should not contain
+                                    spaces (e.g. 'thisisasentence')
+        """
+
+        if isinstance(texts, str):
+            return self.restore_doc(texts)
+        if isinstance(texts, list):
+            restored = []
+            texts_ = tqdm_(texts)
+            for text in texts_:
+                restored_ = self.restore_doc(text)
+                restored.append(restored_)
+                texts_.set_postfix({
+                    'ram_usage': f"{psutil.virtual_memory().percent}%"
+                })
+            return restored
+```
+
+#### Example usage
+
+```python
+TEST_PATH = 'drive/MyDrive/PAPER/data/ted_talks/ted_test.csv'
+test_df = pd.read_csv(TEST_PATH)
+test_texts = test_df['no_spaces'].to_list()[:10]
+
+hyp = NB_Ted.restore(test_texts)
+```
+
+<img src="readme-img/restore_output1.PNG"></img>
+
+```python
+hyp[0]
+```
+
+<img src="readme-img/restore_output2.PNG"></img>
+
+You can also see these examples in [src/nb_space_restorer_example.ipynb](src/nb_space_restorer_example.ipynb).
+
+See the source code for details of other class methods.
+
+####
 ## References
 
 G. Jenks, ”python-wordsegment,” July, 2018. [Online]. Available:
