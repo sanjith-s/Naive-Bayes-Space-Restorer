@@ -1,4 +1,6 @@
+import os
 from typing import Union
+
 from tqdm import tqdm as non_notebook_tqdm
 from tqdm.notebook import tqdm as notebook_tqdm
 
@@ -28,3 +30,10 @@ def is_running_from_ipython():
         return True
     except ModuleNotFoundError:
         return False
+
+
+# ====================
+def mk_dir_if_does_not_exist(path):
+
+    if not os.path.exists(path):
+        os.makedirs(path)

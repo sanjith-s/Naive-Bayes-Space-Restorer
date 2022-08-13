@@ -2,20 +2,26 @@
 
 Defines the NBSpaceRestorer class"""
 
+import csv
 import operator
+import os
 import pickle
-import psutil
 from collections import Counter
 from functools import reduce
-from memo.memo import memo
 from math import log10
 
 import nltk
+import psutil
+from memo.memo import memo
+from sklearn.model_selection import ParameterGrid
 
-from nb_helper import Str_or_List, get_tqdm
+from nb_helper import Str_or_List, get_tqdm, mk_dir_if_does_not_exist
 
 tqdm_ = get_tqdm()
 
+ERROR_GRID_SEARCH_LOG_EXISTS = """\
+There is already a grid search with this name! \
+Choose a new name."""
 ERROR_INIT_OVERSPECIFIED = """\
 Only one of train_texts and load_path should be specified. \
 Do you want to train a new model or load from a pickle file?"""
@@ -108,6 +114,7 @@ class NBSpaceRestorer():
                 ]
                 self.bigram_freqs.update(bigrams)
             if save_path:
+                self.path = save_path
                 with open(save_path, 'wb') as f:
                     pickle.dump({
                             'unigram_freqs': self.unigram_freqs,
@@ -116,6 +123,7 @@ class NBSpaceRestorer():
             print(MESSAGE_TRAINING_COMPLETE)
         # Load unigram and bigram frequences from a file
         if load_path:
+            self.path = load_path
             if ignore_case is not None:
                 print(WARNING_IGNORE_CASE_IGNORED)
             with open(load_path, 'rb') as f:
@@ -271,3 +279,44 @@ class NBSpaceRestorer():
                     'ram_usage': f"{psutil.virtual_memory().percent}%"
                 })
             return restored
+
+    # # ====================
+    # def root_folder(self):
+
+    #     return os.path.dirname(self.path)
+
+    # # ====================
+    # def grid_search(self,
+    #                 grid_search_name: str,
+    #                 test_texts: list,
+    #                 keep_size: float,
+    #                 L: list,
+    #                 lambda_: list):
+
+    #     log_path = self.grid_search_log(grid_search_name)
+    #     if os.path.exists(log_path):
+    #         raise RuntimeError(ERROR_GRID_SEARCH_LOG_EXISTS)
+    #     column_names = ['L', 'lambda_', 'Precision', 'Recall', 'F-score']
+    #     with open(log_path, 'a') as f:
+    #         w = csv.writer(f)
+    #         w.writerow(column_names)
+    #     parameters = list(ParameterGrid)
+
+    # ====================
+    def grid_search_folder(self, grid_search_name):
+
+        gs_folder = os.path.join(
+            self.root_folder(),
+            'grid_searches',
+            grid_search_name
+        )
+        mk_dir_if_does_not_exist(gs_folder)
+        return gs_folder
+
+    # ====================
+    def grid_search_log(self, grid_search_name):
+
+        return os.path.join(
+            self.grid_search_folder(grid_search_name),
+            'log.csv'
+        )
