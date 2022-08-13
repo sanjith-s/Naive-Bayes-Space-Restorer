@@ -96,7 +96,7 @@ class NBSpaceRestorerGridSearch:
     def root_folder(self):
 
         return os.path.join(
-            self.parent.grid_search_path,
+            self.parent.grid_search_path(),
             self.grid_search_name
         )
 
