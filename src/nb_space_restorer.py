@@ -117,7 +117,7 @@ class NBSpaceRestorer():
     # ====================
     def get_freqs(self):
 
-        freqs = load_pickle(self.freqs_path)
+        freqs = load_pickle(self.freqs_path())
         return freqs['unigram_freqs'], freqs['bigram_freqs']
 
     # ====================
