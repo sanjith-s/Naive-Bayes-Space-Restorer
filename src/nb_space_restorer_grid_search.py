@@ -73,7 +73,7 @@ class NBSpaceRestorerGridSearch:
             L = parameters['L']
             lambda_ = parameters['lambda_']
             print('L =', L, '; lambda_ =', lambda_)
-            hyp = self.parent.restore(self.input)
+            hyp = self.parent.restore(self.input, L=L, lambda_=lambda_)
             frmg = FeatureRestorerMetricGetter(
                 self.ref, hyp, capitalisation=False, feature_chars=' ',
                 get_wer_info_on_init=False
