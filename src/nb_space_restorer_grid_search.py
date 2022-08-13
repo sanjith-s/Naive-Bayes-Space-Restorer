@@ -78,18 +78,11 @@ class NBSpaceRestorerGridSearch:
                 self.ref, hyp, capitalisation=False, feature_chars=' ',
                 get_wer_info_on_init=False
             )
-            precision = \
-                frmg.get_prfs_all_features()["Spaces (' ')"]['Precision']
-            recall = frmg.get_prfs_all_features()["Spaces (' ')"]['Recall']
-            f_score = frmg.get_prfs_all_features()["Spaces (' ')"]['F-score']
-            log_df = log_df.append({
-                'i': i,
-                'L': L,
-                'lambda_': lambda_,
-                'Precision': precision,
-                'Recall': recall,
-                'F-score': f_score,
-            }, ignore_index=True)
+            prf = frmg.get_prfs()[' ']
+            log_df = log_df.append(
+                {'i': i, 'L': L, 'lambda_': lambda_, **prf},
+                ignore_index=True
+            )
             self.save_log(log_df)
 
     # ====================
