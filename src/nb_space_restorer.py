@@ -2,10 +2,8 @@
 
 Defines the NBSpaceRestorer class"""
 
-import csv
 import operator
 import os
-import pickle
 from collections import Counter
 from functools import reduce
 from math import log10
@@ -13,21 +11,22 @@ from math import log10
 import nltk
 import psutil
 from memo.memo import memo
-from sklearn.model_selection import ParameterGrid
 
-from nb_helper import Str_or_List, get_tqdm, mk_dir_if_does_not_exist
+from nb_helper import (Str_or_List, get_tqdm, load_pickle,
+                       mk_dir_if_does_not_exist, save_pickle)
+from nb_space_restorer_grid_search import NBSpaceRestorerGridSearch
 
 tqdm_ = get_tqdm()
 
+FREQS_FNAME = 'FREQS.pickle'
+GRID_SEARCH_PATH_NAME = 'grid_searches'
+
+ERROR_MODEL_EXISTS = """\
+There is already a NB Space Restorer at this path. \
+Either choose a new path, or load the existing NB Space Restorer"""
 ERROR_GRID_SEARCH_LOG_EXISTS = """\
 There is already a grid search with this name! \
 Choose a new name."""
-ERROR_INIT_OVERSPECIFIED = """\
-Only one of train_texts and load_path should be specified. \
-Do you want to train a new model or load from a pickle file?"""
-ERROR_INIT_UNDERSPECIFIED = """\
-You must define either train_texts or load_path to initialize \
-an instance of NBSpaceRestorer."""
 WARNING_IGNORE_CASE_IGNORED = """\
 Warning: ignore_case option can only be specified in initial \
 model training. ignore_case option was ignored."""
@@ -41,98 +40,85 @@ class NBSpaceRestorer():
 
     # ====================
     def __init__(self,
-                 train_texts: list = None,
-                 save_path: str = None,
-                 load_path: str = None,
-                 L: int = 20,
-                 lambda_: float = 10.0,
+                 root_folder: str,
+                 train_texts: list,
                  ignore_case: bool = True):
         """Initialize an instance of the NBSpaceRestorer class
 
         Required arguments:
         -------------------
-        exactly ONE of EITHER:
+        root_folder: str            The folder that will contain all instance
+                                    assets.
+                                    This folder will be created if it does not
+                                    already exist.
 
-        train_texts: list = None    A list of 'gold standard' documents
-                                    (i.e. correctly space sequences of
-                                    words) on which to train the model.
-
-        OR
-
-        load_path: str = None       The path to a pickle file containing
-                                    a dictionary with keys 'unigram_freqs'
-                                    and 'bigram_freqs' containing Counter
-                                    objects.
+        train_texts: list           The list of 'gold standard' documents on
+                                    which to train the model.
 
         Optional keyword arguments:
         ---------------------------
-        save_path: str = None       If training a new model with train_texts,
-                                    the path to save the pickle file of unigram
-                                    and bigram frequencies.
-                                    Ignored if loading previously saved
-                                    frequencies using load_path.
-
-        L: int = 20                 The maximum possible word length to
-                                    consider during inference. Inference
-                                    time increases with L as more probabilities
-                                    need to be calculated.
-
-        lambda_ = 10.0              The smoothing parameter to use during
-                                    inference. Higher values of lambda_ cause
-                                    higher probabilities to be assigned to
-                                    words not learnt during training.
-
-        ignore_case: bool           Ignore case during training (so that e.g.
-            = None                 'banana', 'Banana', and 'BANANA' are all
-                                    counted as occurences of 'banana').
-                                    Ignored if loading previously saved
-                                    frequencies using load_path.
-                                    Set to True by default.
+        ignore_case: bool           If True, case will be ignored during
+            = True                  training (so that e.g. 'banana', 'Banana',
+                                    and 'BANANA' are all counted as
+                                    occurences of 'banana').
         """
 
+        if os.path.exists(root_folder):
+            raise ValueError(ERROR_MODEL_EXISTS)
+        mk_dir_if_does_not_exist(root_folder)
+        self.root_folder = root_folder
         self.unigram_freqs = Counter()
         self.bigram_freqs = Counter()
-        self.L = L
-        self.lambda_ = lambda_
-        if train_texts is None and load_path is None:
-            raise ValueError(ERROR_INIT_UNDERSPECIFIED)
-        if train_texts is not None and load_path is not None:
-            raise ValueError(ERROR_INIT_OVERSPECIFIED)
-
-        # Train from texts
-        if train_texts:
-            if ignore_case is None:
-                ignore_case = True
-            for text in train_texts:
-                if ignore_case:
-                    text = text.lower()
-                words = text.split()
-                self.unigram_freqs.update(words)
-                bigrams = [
-                    f'{first_word}_{second_word}'
-                    for first_word, second_word in list(nltk.bigrams(words))
-                ]
-                self.bigram_freqs.update(bigrams)
-            if save_path:
-                self.path = save_path
-                with open(save_path, 'wb') as f:
-                    pickle.dump({
-                            'unigram_freqs': self.unigram_freqs,
-                            'bigram_freqs': self.bigram_freqs
-                        }, f)
-            print(MESSAGE_TRAINING_COMPLETE)
-        # Load unigram and bigram frequences from a file
-        if load_path:
-            self.path = load_path
-            if ignore_case is not None:
-                print(WARNING_IGNORE_CASE_IGNORED)
-            with open(load_path, 'rb') as f:
-                freqs = pickle.load(f)
-            self.unigram_freqs = freqs['unigram_freqs']
-            self.bigram_freqs = freqs['bigram_freqs']
-            print(MESSAGE_FINISHED_LOADING)
-        # Get probability distributions
+        for text in train_texts:
+            if ignore_case:
+                text = text.lower()
+            words = text.split()
+            self.unigram_freqs.update(words)
+            bigrams = [
+                f'{first_word}_{second_word}'
+                for first_word, second_word in list(nltk.bigrams(words))
+            ]
+            self.bigram_freqs.update(bigrams)
+        freqs = {
+            'unigram_freqs': self.unigram_freqs,
+            'bigram_freqs': self.bigram_freqs
+        }
+        save_pickle(freqs, self.freqs_path())
+        print(MESSAGE_TRAINING_COMPLETE)
         self.get_pdists()
+
+    # ====================
+    @classmethod
+    def load(cls, root_folder: str):
+
+        self = cls.__new__(cls)
+        self.root_folder = root_folder
+        self.unigram_freqs, self.bigram_freqs = \
+            self.get_freqs()
+        print(MESSAGE_FINISHED_LOADING)
+        self.get_pdists()
+        return self
+
+    # ====================
+    def set_L(self, L: int):
+
+        self.L = L
+
+    # ====================
+    def set_lambda_(self, lambda_: float):
+
+        self.lambda_ = lambda_
+
+    # ====================
+    def freqs_path(self):
+
+        return os.path.join(self.root_folder, FREQS_FNAME)
+
+    # ====================
+    def get_freqs(self):
+
+        freqs = load_pickle(self.freqs_path)
+        return freqs['unigram_freqs'], freqs['bigram_freqs']
 
     # ====================
     def get_pdists(self):
@@ -249,7 +235,10 @@ class NBSpaceRestorer():
         return joined
 
     # ====================
-    def restore(self, texts: Str_or_List) -> str:
+    def restore(self,
+                texts: Str_or_List,
+                L: int,
+                lambda_: float) -> str:
         """Restore spaces to either a single string, or a list of
         strings.
 
@@ -267,6 +256,8 @@ class NBSpaceRestorer():
                                     spaces (e.g. 'thisisasentence')
         """
 
+        self.set_L(L)
+        self.set_lambda_(lambda_)
         if isinstance(texts, str):
             return self.restore_doc(texts)
         if isinstance(texts, list):
@@ -280,43 +271,27 @@ class NBSpaceRestorer():
                 })
             return restored
 
-    # # ====================
-    # def root_folder(self):
-
-    #     return os.path.dirname(self.path)
-
-    # # ====================
-    # def grid_search(self,
-    #                 grid_search_name: str,
-    #                 test_texts: list,
-    #                 keep_size: float,
-    #                 L: list,
-    #                 lambda_: list):
-
-    #     log_path = self.grid_search_log(grid_search_name)
-    #     if os.path.exists(log_path):
-    #         raise RuntimeError(ERROR_GRID_SEARCH_LOG_EXISTS)
-    #     column_names = ['L', 'lambda_', 'Precision', 'Recall', 'F-score']
-    #     with open(log_path, 'a') as f:
-    #         w = csv.writer(f)
-    #         w.writerow(column_names)
-    #     parameters = list(ParameterGrid)
+    # === GRID SEARCH ===
 
     # ====================
-    def grid_search_folder(self, grid_search_name):
+    def add_grid_search(self,
+                        grid_search_name: str,
+                        L: list,
+                        lambda_: list,
+                        ref: list,
+                        input: list):
 
-        gs_folder = os.path.join(
-            self.root_folder(),
-            'grid_searches',
-            grid_search_name
-        )
-        mk_dir_if_does_not_exist(gs_folder)
-        return gs_folder
+        attrs = locals()
+        del attrs['self']
+        self.grid_search = NBSpaceRestorerGridSearch(self, **attrs)
 
     # ====================
-    def grid_search_log(self, grid_search_name):
+    def load_grid_search(self,
+                         grid_search_name: str):
 
-        return os.path.join(
-            self.grid_search_folder(grid_search_name),
-            'log.csv'
-        )
+        self.grid_search = NBSpaceRestorerGridSearch.load(grid_search_name)
+
+    # ====================
+    def grid_search_path(self):
+
+        return os.path.join(self.root_folder, GRID_SEARCH_PATH_NAME)

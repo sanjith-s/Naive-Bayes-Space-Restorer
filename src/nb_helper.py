@@ -1,8 +1,14 @@
 import os
-from typing import Union
+import pickle
+from typing import Any, Union
 
 from tqdm import tqdm as non_notebook_tqdm
 from tqdm.notebook import tqdm as notebook_tqdm
+
+try:
+    from IPython.display import clear_output
+except:
+    pass
 
 Str_or_List = Union[str, list]
 
@@ -33,7 +39,42 @@ def is_running_from_ipython():
 
 
 # ====================
+def display_or_print(obj: Any):
+
+    if is_running_from_ipython():
+        display(obj)
+    else:
+        print(obj)
+
+
+# ====================
 def mk_dir_if_does_not_exist(path):
 
     if not os.path.exists(path):
         os.makedirs(path)
+
+
+# ====================
+def save_pickle(data: Any, fp: str):
+    """Save data to a .pickle file"""
+
+    with open(fp, 'wb') as f:
+        pickle.dump(data, f)
+
+
+# ====================
+def load_pickle(fp: str) -> Any:
+    """Load a .pickle file and return the data"""
+
+    with open(fp, 'rb') as f:
+        unpickled = pickle.load(f)
+    return unpickled
+
+
+# ====================
+def try_clear_output():
+
+    try:
+        clear_output(wait=True)
+    except:
+        pass
