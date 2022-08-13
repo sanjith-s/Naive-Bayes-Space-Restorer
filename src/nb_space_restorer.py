@@ -289,7 +289,7 @@ class NBSpaceRestorer():
     def load_grid_search(self,
                          grid_search_name: str):
 
-        self.grid_search = NBSpaceRestorerGridSearch.load(grid_search_name)
+        self.grid_search = NBSpaceRestorerGridSearch.load(self, grid_search_name)
 
     # ====================
     def grid_search_path(self):
