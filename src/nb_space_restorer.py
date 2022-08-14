@@ -19,6 +19,7 @@ tqdm_ = get_tqdm()
 
 FREQS_FNAME = 'FREQS.pickle'
 GRID_SEARCH_PATH_NAME = 'grid_searches'
+MAX_CACHE_SIZE = 1_000_000
 
 ERROR_MODEL_EXISTS = """\
 There is already a NB Space Restorer at this path. \
@@ -183,7 +184,7 @@ class NBSpaceRestorer():
         return Pfirst + Prem, [first] + rem
 
     # ====================
-    @lru_cache(maxsize=10_000)
+    @lru_cache(maxsize=MAX_CACHE_SIZE)
     def restore_chunk(self, text_: str, prev='<S>') -> list:
         """Restore spaces to a short string of input characters
 
@@ -279,9 +280,10 @@ class NBSpaceRestorer():
             for text in texts_:
                 restored_ = self.restore_doc(text)
                 restored.append(restored_)
+                cache_size = self.restore_chunk.cache_info().currsize
                 texts_.set_postfix({
                     'ram_usage': f"{psutil.virtual_memory().percent}%",
-                    'cache_size': self.restore_chunk.cache_info().currsize
+                    'cache_size': f"{cache_size:,}"
                 })
             return restored
 
