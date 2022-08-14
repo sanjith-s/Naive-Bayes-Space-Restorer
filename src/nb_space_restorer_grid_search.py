@@ -66,6 +66,7 @@ class NBSpaceRestorerGridSearch:
         self.input = load_pickle(self.input_path())
         self.param_combos = load_pickle(self.param_combos_path())
         self.run_grid_search()
+        return self
 
     # ====================
     def run_grid_search(self):
