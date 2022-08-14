@@ -10,7 +10,6 @@ from math import log10
 
 import nltk
 import psutil
-from memo.memo import memo
 
 from nb_helper import (Str_or_List, get_tqdm, load_pickle,
                        mk_dir_if_does_not_exist, save_pickle)
@@ -24,15 +23,8 @@ GRID_SEARCH_PATH_NAME = 'grid_searches'
 ERROR_MODEL_EXISTS = """\
 There is already a NB Space Restorer at this path. \
 Either choose a new path, or load the existing NB Space Restorer"""
-ERROR_GRID_SEARCH_LOG_EXISTS = """\
-There is already a grid search with this name! \
-Choose a new name."""
-WARNING_IGNORE_CASE_IGNORED = """\
-Warning: ignore_case option can only be specified in initial \
-model training. ignore_case option was ignored."""
-MESSAGE_RAM_IN_USE = "RAM currently in use: {ram_in_use}%"
-MESSAGE_TRAINING_COMPLETE = "Training complete."
 MESSAGE_FINISHED_LOADING = "Finished loading model."
+MESSAGE_TRAINING_COMPLETE = "Training complete."
 
 
 # ====================
@@ -49,8 +41,8 @@ class NBSpaceRestorer():
         -------------------
         root_folder: str            The folder that will contain all instance
                                     assets.
-                                    This folder will be created if it does not
-                                    already exist.
+                                    The folder should not already exist. It will
+                                    be created automatically.
 
         train_texts: list           The list of 'gold standard' documents on
                                     which to train the model.
@@ -90,6 +82,15 @@ class NBSpaceRestorer():
     # ====================
     @classmethod
     def load(cls, root_folder: str):
+        """Load a previously saved instance of the NBSpaceRestorer class
+
+        Required arguments:
+        -------------------
+        root_folder: str            The folder that contains all instance
+                                    assets (i.e. the folder passed as
+                                    root_folder when the instance was
+                                    initialized).
+        """
 
         self = cls.__new__(cls)
         self.root_folder = root_folder
@@ -237,8 +238,8 @@ class NBSpaceRestorer():
     # ====================
     def restore(self,
                 texts: Str_or_List,
-                L: int,
-                lambda_: float) -> str:
+                L: int = 20,
+                lambda_: float = 10.0) -> str:
         """Restore spaces to either a single string, or a list of
         strings.
 
@@ -254,6 +255,16 @@ class NBSpaceRestorer():
                                     of input characters.
                                     Input strings should not contain
                                     spaces (e.g. 'thisisasentence')
+
+        L: int = 20                 The maximum possible word length to
+                                    consider during inference. Inference
+                                    time increases with L as more probabilities
+                                    need to be calculated.
+
+        lambda_ = 10.0              The smoothing parameter to use during
+                                    inference. Higher values of lambda_ cause
+                                    higher probabilities to be assigned to
+                                    words not learnt during training.
         """
 
         self.set_L(L)
@@ -289,7 +300,8 @@ class NBSpaceRestorer():
     def load_grid_search(self,
                          grid_search_name: str):
 
-        self.grid_search = NBSpaceRestorerGridSearch.load(self, grid_search_name)
+        self.grid_search = \
+            NBSpaceRestorerGridSearch.load(self, grid_search_name)
 
     # ====================
     def grid_search_path(self):

@@ -2,11 +2,17 @@ import os
 import time
 
 import pandas as pd
-from feature_restorer_metric_getter import FeatureRestorerMetricGetter
 from sklearn.model_selection import ParameterGrid
 
 from nb_helper import (display_or_print, load_pickle, mk_dir_if_does_not_exist,
                        save_pickle, try_clear_output)
+
+try:                       
+    from feature_restorer_metric_getter import FeatureRestorerMetricGetter
+except ModuleNotFoundError:
+    print(WARNING_NO_METRIC_GETTER)
+
+LOG_DF_COLS = ['i', 'L', 'lambda_', 'Precision', 'Recall', 'F-score', 'Time']
 
 ERROR_GRID_SEARCH_EXISTS = """\
 This NBSpaceRestorer already has a grid search with the name \
@@ -14,10 +20,11 @@ This NBSpaceRestorer already has a grid search with the name \
 new grid search name."""
 MESSAGE_SKIPPING_PARAMS = """\
 Skipping parameter combination at index {i} because results \
-are already in the grid search log.
+are already in the grid search log."""
+WARNING_NO_METRIC_GETTER = """\
+Warning: Unable to import FeatureRestorerMetricGetter. You will be unable to \
+use grid search features. See the documentation for help.
 """
-
-LOG_DF_COLS = ['i', 'L', 'lambda_', 'Precision', 'Recall', 'F-score', 'Time']
 
 
 # ====================
@@ -82,7 +89,8 @@ class NBSpaceRestorerGridSearch:
             prf = frmg.get_prfs()[' ']
             time_taken = time.time() - start_time
             log_df = log_df.append(
-                {'i': i, 'L': L, 'lambda_': lambda_, **prf, 'Time': time_taken},
+                {'i': i, 'L': L, 'lambda_': lambda_, **prf,
+                 'Time': time_taken},
                 ignore_index=True
             )
             self.save_log(log_df)

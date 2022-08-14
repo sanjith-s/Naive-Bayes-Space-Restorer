@@ -27,13 +27,20 @@ sys.path.append('naive-bayes-space-restorer/src')
 
 ### 2. Install requirements
 
-If working in Google Colab, the only requirement is `python-memo`. All other requirements are installed by default.
+The FeatureRestorerMetricGetter class from the Feature Restorer Metric Getter library is required in order to use grid search features.
+
+To install it in Google Colab, run the following:
 
 ```python
-!pip install python-memo
+!rm -rf 'feature-restorer-metric-getter'
+!git clone https://github.com/ljdyer/feature-restorer-metric-getter.git
+sys.path.append('feature-restorer-metric-getter/src')
+from feature_restorer_metric_getter import FeatureRestorerMetricGetter
 ```
 
-If working in a virtual environment, run the following:
+If working in Google Colab, all other requirements are install by default.
+
+If working in a virtual environment, run the following. You will also need to install Feature Restore Metric Getter separately.
 
 ```python
 pip install -r requirements.txt
@@ -49,113 +56,87 @@ from nb_space_restorer import NBSpaceRestorer
 
 ### Initialize an instance of NBSpaceRestorer
 
+Training, which consists simply of constructing unigram and bigram frequency lists and takes very little time, is carried out upon initialization.
+
 ```python
 # ====================
 class NBSpaceRestorer():
 
     # ====================
     def __init__(self,
-                 train_texts: list = None,
-                 save_path: str = None,
-                 load_path: str = None,
-                 L: int = 20,
-                 lambda_: float = 10.0,
+                 root_folder: str,
+                 train_texts: list,
                  ignore_case: bool = True):
         """Initialize an instance of the NBSpaceRestorer class
 
         Required arguments:
         -------------------
-        exactly ONE of EITHER:
+        root_folder: str            The folder that will contain all instance
+                                    assets.
+                                    The folder should not already exist. It will
+                                    be created automatically.
 
-        train_texts: list = None    A list of 'gold standard' documents
-                                    (i.e. correctly spaced sequences of
-                                    words) on which to train the model.
-
-        OR
-
-        load_path: str = None       The path to a pickle file containing
-                                    a dictionary with keys 'unigram_freqs'
-                                    and 'bigram_freqs' containing Counter
-                                    objects.
+        train_texts: list           The list of 'gold standard' documents on
+                                    which to train the model.
 
         Optional keyword arguments:
         ---------------------------
-        save_path: str = None       If training a new model with train_texts,
-                                    the path to save the pickle file of unigram
-                                    and bigram frequencies.
-                                    Ignored if loading previously saved
-                                    frequencies using load_path.
-
-        L: int = 20                 The maximum possible word length to
-                                    consider during inference. Inference
-                                    time increases with L as more probabilities
-                                    need to be calculated.
-
-        lambda_ = 10.0              The smoothing parameter to use during
-                                    inference. Higher values of lambda_ cause
-                                    higher probabilities to be assigned to
-                                    words not learnt during training.
-
-        ignore_case: bool           Ignore case during training (so that e.g.
-            = False                 'banana', 'Banana', and 'BANANA' are all
-                                    counted as occurences of 'banana').
-                                    Ignored if loading previously saved
-                                    frequencies using load_path.
+        ignore_case: bool           If True, case will be ignored during
+            = True                  training (so that e.g. 'banana', 'Banana',
+                                    and 'BANANA' are all counted as
+                                    occurences of 'banana').
         """
 ```
 
-#### Example 1: Train a model with new texts
+Example usage:
 
 ```python
-from google.colab import drive
-drive.mount('/content/drive')
-
+MODEL_FOLDER = 'drive/MyDrive/PAPER/models/01_nb/NB_TED'
 TRAIN_PATH = 'drive/MyDrive/PAPER/data/ted_talks/ted_train.csv'
 train_df = pd.read_csv(TRAIN_PATH)
 train_texts = train_df['all_cleaned'].to_list()
-
 NB_Ted = NBSpaceRestorer(
+    root_folder=MODEL_FOLDER,
     train_texts=train_texts,
-    save_path='drive/MyDrive/PAPER/models/01_nb/ted_train.pickle',
-    L=20,
-    lambda_=10.0,
-    ignore_case=True
 )
 ```
 
 <img src="readme-img/example1output.PNG"></img>
 
-#### Example 2: Load a trained model
-
-Hyperparameters _L_ and λ are not applied until inference, so new values can be specified when loading previous trained models.
-
-`ignore_case` is applied during traning, so should not be specified when training a new model (if it is specified, it will be ignored).
-
-```python
-NB_Ted = NBSpaceRestorer(
-    load_path='drive/MyDrive/PAPER/models/01_nb/ted_train.pickle',
-    L=15,
-    lambda_=12,
-    ignore_case=False
-)
-```
-
-<img src="readme-img/example2output.PNG"></img>
-
-#### Example 3: Change model hyperparameters
-
-Hyperparameters _L_ and λ are not applied until inference, so they can be changed at any time.
-
-```python
-NB_Ted.L = 17
-NB_Ted.lambda_ = 14
-```
-
-### Run inference on new texts
+### Load a previously saved instance
 
 ```python
     # ====================
-    def restore(self, texts: Str_or_List) -> str:
+    @classmethod
+    def load(cls, root_folder: str):
+        """Load a previously saved instance of the NBSpaceRestorer class
+
+        Required arguments:
+        -------------------
+        root_folder: str            The folder that contains all instance
+                                    assets (i.e. the folder passed as
+                                    root_folder when the instance was
+                                    initialized).
+        """
+```
+
+```python
+MODEL_FOLDER = 'drive/MyDrive/PAPER/models/01_nb/NB_TED'
+NB_Ted = NBSpaceRestorer.load(MODEL_FOLDER)
+```
+
+<img src="readme-img/load.PNG"></img>
+
+### Run inference on new texts
+
+Hyperparameters _L_ and λ can be specified at inference time.
+
+```python
+    # ====================
+    def restore(self,
+                texts: Str_or_List,
+                L: int = 20,
+                lambda_: float = 10.0) -> str:
         """Restore spaces to either a single string, or a list of
         strings.
 
@@ -171,20 +152,17 @@ NB_Ted.lambda_ = 14
                                     of input characters.
                                     Input strings should not contain
                                     spaces (e.g. 'thisisasentence')
-        """
 
-        if isinstance(texts, str):
-            return self.restore_doc(texts)
-        if isinstance(texts, list):
-            restored = []
-            texts_ = tqdm_(texts)
-            for text in texts_:
-                restored_ = self.restore_doc(text)
-                restored.append(restored_)
-                texts_.set_postfix({
-                    'ram_usage': f"{psutil.virtual_memory().percent}%"
-                })
-            return restored
+        L: int = 20                 The maximum possible word length to
+                                    consider during inference. Inference
+                                    time increases with L as more probabilities
+                                    need to be calculated.
+
+        lambda_ = 10.0              The smoothing parameter to use during
+                                    inference. Higher values of lambda_ cause
+                                    higher probabilities to be assigned to
+                                    words not learnt during training.
+        """
 ```
 
 #### Example usage
@@ -193,17 +171,16 @@ NB_Ted.lambda_ = 14
 TEST_PATH = 'drive/MyDrive/PAPER/data/ted_talks/ted_test.csv'
 test_df = pd.read_csv(TEST_PATH)
 test_texts = test_df['no_spaces'].to_list()[:10]
-
 hyp = NB_Ted.restore(test_texts)
 ```
 
-<img src="readme-img/restore_output1.PNG"></img>
+<img src="readme-img/restore1.PNG"></img>
 
 ```python
 hyp[0]
 ```
 
-<img src="readme-img/restore_output2.PNG"></img>
+<img src="readme-img/restore2.PNG"></img>
 
 You can also see these examples in [src/nb_space_restorer_example.ipynb](src/nb_space_restorer_example.ipynb).
 
