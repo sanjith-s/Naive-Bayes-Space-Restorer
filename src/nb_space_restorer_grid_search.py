@@ -84,6 +84,7 @@ class NBSpaceRestorerGridSearch:
                 ignore_index=True
             )
             self.save_log(log_df)
+            self.parent.restore_chunk.cache_clear()
 
     # ====================
     def root_folder(self):
