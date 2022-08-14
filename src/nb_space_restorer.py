@@ -182,7 +182,6 @@ class NBSpaceRestorer():
         return Pfirst + Prem, [first] + rem
 
     # ====================
-    @memo
     def restore_chunk(self, text_: str, prev='<S>') -> list:
         """Restore spaces to a short string of input characters
 
