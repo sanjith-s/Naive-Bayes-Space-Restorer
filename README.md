@@ -103,7 +103,7 @@ NB_Ted = NBSpaceRestorer(
 )
 ```
 
-<img src="readme-img/example1output.PNG"></img>
+<img src="readme-img/init.PNG"></img>
 
 ### Load a previously saved instance
 
