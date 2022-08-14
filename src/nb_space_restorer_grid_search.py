@@ -80,7 +80,7 @@ class NBSpaceRestorerGridSearch:
                 get_wer_info_on_init=False
             )
             prf = frmg.get_prfs()[' ']
-            time_taken = time.time() - start_time()
+            time_taken = time.time() - start_time
             log_df = log_df.append(
                 {'i': i, 'L': L, 'lambda_': lambda_, **prf, 'Time': time_taken},
                 ignore_index=True
