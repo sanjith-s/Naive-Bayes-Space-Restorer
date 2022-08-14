@@ -19,7 +19,7 @@ tqdm_ = get_tqdm()
 
 FREQS_FNAME = 'FREQS.pickle'
 GRID_SEARCH_PATH_NAME = 'grid_searches'
-MAX_CACHE_SIZE = 100_000_000
+MAX_CACHE_SIZE = 10_000_000
 
 ERROR_MODEL_EXISTS = """\
 There is already a NB Space Restorer at this path. \
