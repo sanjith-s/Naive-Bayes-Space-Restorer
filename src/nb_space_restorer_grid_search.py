@@ -141,7 +141,7 @@ class NBSpaceRestorerGridSearch:
         log.to_csv(self.log_path(), index=False)
 
     # ====================
-    def show_max(self, col: str = 'F-score')
+    def show_max(self, col: str = 'F-score'):
 
         log_df = self.get_log_df()
         max_row = log_df.loc[log_df[col].idxmax()]
