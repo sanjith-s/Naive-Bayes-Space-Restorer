@@ -1,9 +1,9 @@
 import os
+import time
 
 import pandas as pd
-from sklearn.model_selection import ParameterGrid
-
 from feature_restorer_metric_getter import FeatureRestorerMetricGetter
+from sklearn.model_selection import ParameterGrid
 
 from nb_helper import (display_or_print, load_pickle, mk_dir_if_does_not_exist,
                        save_pickle, try_clear_output)
@@ -17,7 +17,7 @@ Skipping parameter combination at index {i} because results \
 are already in the grid search log.
 """
 
-LOG_DF_COLS = ['i', 'L', 'lambda_', 'Precision', 'Recall', 'F-score']
+LOG_DF_COLS = ['i', 'L', 'lambda_', 'Precision', 'Recall', 'F-score', 'Time']
 
 
 # ====================
@@ -73,19 +73,20 @@ class NBSpaceRestorerGridSearch:
             L = parameters['L']
             lambda_ = parameters['lambda_']
             print('L =', L, '; lambda_ =', lambda_)
+            start_time = time.time()
             hyp = self.parent.restore(self.input, L=L, lambda_=lambda_)
             frmg = FeatureRestorerMetricGetter(
                 self.ref, hyp, capitalisation=False, feature_chars=' ',
                 get_wer_info_on_init=False
             )
             prf = frmg.get_prfs()[' ']
+            time_taken = time.time() - start_time()
             log_df = log_df.append(
-                {'i': i, 'L': L, 'lambda_': lambda_, **prf},
+                {'i': i, 'L': L, 'lambda_': lambda_, **prf, 'Time': time_taken},
                 ignore_index=True
             )
             self.save_log(log_df)
             self.parent.restore_chunk.cache_clear()
-
 
     # ====================
     def root_folder(self):
