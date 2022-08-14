@@ -54,9 +54,11 @@ from nb_space_restorer import NBSpaceRestorer
 
 ## How to use
 
+Example usage for the operations covered below is also included in the example notebook: [nb_space_restorer_example.ipynb](nb_space_restorer_example.ipynb).
+
 ### Initialize an instance of NBSpaceRestorer
 
-Training, which consists simply of constructing unigram and bigram frequency lists and takes very little time, is carried out upon initialization.
+Training—which consists simply of constructing unigram and bigram frequency lists and takes very little time—is carried out upon initialization.
 
 ```python
 # ====================
@@ -182,9 +184,7 @@ hyp[0]
 
 <img src="readme-img/restore2.PNG"></img>
 
-You can also see these examples in [src/nb_space_restorer_example.ipynb](src/nb_space_restorer_example.ipynb).
-
-See the source code for details of other class methods.
+See the source code for details of other class methods, including grid search features.
 
 ####
 ## References
