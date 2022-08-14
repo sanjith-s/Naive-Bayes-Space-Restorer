@@ -5,7 +5,7 @@ Defines the NBSpaceRestorer class"""
 import operator
 import os
 from collections import Counter
-from functools import reduce
+from functools import lru_cache, reduce
 from math import log10
 
 import nltk
@@ -182,6 +182,7 @@ class NBSpaceRestorer():
         return Pfirst + Prem, [first] + rem
 
     # ====================
+    @lru_cache
     def restore_chunk(self, text_: str, prev='<S>') -> list:
         """Restore spaces to a short string of input characters
 
