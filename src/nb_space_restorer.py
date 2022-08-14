@@ -281,7 +281,7 @@ class NBSpaceRestorer():
                 restored.append(restored_)
                 texts_.set_postfix({
                     'ram_usage': f"{psutil.virtual_memory().percent}%",
-                    'cache_size': self.restore_chunk.cache_info()['currsize']
+                    'cache_size': self.restore_chunk.cache_info().currsize
                 })
             return restored
 
