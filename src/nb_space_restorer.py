@@ -256,6 +256,8 @@ class NBSpaceRestorer():
                                     Input strings should not contain
                                     spaces (e.g. 'thisisasentence')
 
+        Optional keyword arguments:
+        ---------------------------
         L: int = 20                 The maximum possible word length to
                                     consider during inference. Inference
                                     time increases with L as more probabilities
