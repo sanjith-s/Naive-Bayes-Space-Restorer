@@ -4,13 +4,9 @@ import time
 import pandas as pd
 from sklearn.model_selection import ParameterGrid
 
-from nb_helper import (display_or_print, load_pickle, mk_dir_if_does_not_exist,
-                       save_pickle, try_clear_output)
-
-try:                       
-    from feature_restorer_metric_getter import FeatureRestorerMetricGetter
-except ModuleNotFoundError:
-    print(WARNING_NO_METRIC_GETTER)
+from src.nb_helper import (display_or_print, load_pickle,
+                           mk_dir_if_does_not_exist, save_pickle,
+                           try_clear_output)
 
 LOG_DF_COLS = ['i', 'L', 'lambda_', 'Precision', 'Recall', 'F-score', 'Time']
 
@@ -26,6 +22,10 @@ Warning: Unable to import FeatureRestorerMetricGetter. You will be unable to \
 use grid search features. See the documentation for help.
 """
 
+try:                       
+    from feature_restorer_metric_getter import FeatureRestorerMetricGetter
+except ModuleNotFoundError:
+    print(WARNING_NO_METRIC_GETTER)
 
 # ====================
 class NBSpaceRestorerGridSearch:

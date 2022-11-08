@@ -1,0 +1,2 @@
+pytest
+git+https://github.com/ljdyer/readme-docstrings.git

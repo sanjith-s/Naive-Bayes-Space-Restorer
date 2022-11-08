@@ -7,13 +7,14 @@ import os
 from collections import Counter
 from functools import lru_cache, reduce
 from math import log10
+from typing import List, Tuple
 
 import nltk
 import psutil
 
-from nb_helper import (Str_or_List, get_tqdm, load_pickle,
-                       mk_dir_if_does_not_exist, save_pickle)
-from nb_space_restorer_grid_search import NBSpaceRestorerGridSearch
+from src.nb_helper import (Str_or_List, get_tqdm, load_pickle,
+                           mk_dir_if_does_not_exist, save_pickle)
+from src.nb_space_restorer_grid_search import NBSpaceRestorerGridSearch
 
 tqdm_ = get_tqdm()
 
@@ -21,7 +22,7 @@ FREQS_FNAME = 'FREQS.pickle'
 GRID_SEARCH_PATH_NAME = 'grid_searches'
 MAX_CACHE_SIZE = 10_000_000
 
-ERROR_MODEL_EXISTS = """\
+ERROR_FOLDER_EXISTS = """\
 There is already a NB Space Restorer at this path. \
 Either choose a new path, or load the existing NB Space Restorer"""
 MESSAGE_FINISHED_LOADING = "Finished loading model."
@@ -33,33 +34,33 @@ class NBSpaceRestorer():
 
     # ====================
     def __init__(self,
-                 root_folder: str,
                  train_texts: list,
-                 ignore_case: bool = True):
-        """Initialize an instance of the NBSpaceRestorer class
+                 ignore_case: bool = True,
+                 save_folder: str = None):
+        """Initalize and train an instance of the class.
 
-        Required arguments:
-        -------------------
-        root_folder: str            The folder that will contain all instance
-                                    assets.
-                                    The folder should not already exist. It will
-                                    be created automatically.
+        Args:
+          train_texts (list):
+            The list of 'gold standard' documents (running text with spaces)
+            on which to train the model.
+          ignore_case (bool, optional):
+            Whether or not to ignore case during training (so that e.g.
+            'banana', 'Banana', and 'BANANA' are all counted as instances
+            of 'banana'). Defaults to True.
+          save_folder (str, optional):
+            If specified, model assets are saved to the folder at the path
+            specified so that the model can be loaded later. Defaults to None.
 
-        train_texts: list           The list of 'gold standard' documents on
-                                    which to train the model.
-
-        Optional keyword arguments:
-        ---------------------------
-        ignore_case: bool           If True, case will be ignored during
-            = True                  training (so that e.g. 'banana', 'Banana',
-                                    and 'BANANA' are all counted as
-                                    occurences of 'banana').
+        Raises:
+          ValueError:
+            If the folder specified in save_folder already exists.
         """
 
-        if os.path.exists(root_folder):
-            raise ValueError(ERROR_MODEL_EXISTS)
-        mk_dir_if_does_not_exist(root_folder)
-        self.root_folder = root_folder
+        if save_folder:
+            if os.path.exists(save_folder):
+                raise ValueError(ERROR_FOLDER_EXISTS)
+            mk_dir_if_does_not_exist(save_folder)
+            self.root_folder = save_folder
         self.unigram_freqs = Counter()
         self.bigram_freqs = Counter()
         for text in train_texts:
@@ -76,25 +77,29 @@ class NBSpaceRestorer():
             'unigram_freqs': self.unigram_freqs,
             'bigram_freqs': self.bigram_freqs
         }
-        save_pickle(freqs, self.freqs_path())
+        if hasattr(self, 'root_folder'):
+            save_pickle(freqs, self.freqs_path())
         print(MESSAGE_TRAINING_COMPLETE)
         self.get_pdists()
 
     # ====================
     @classmethod
-    def load(cls, root_folder: str):
-        """Load a previously saved instance of the NBSpaceRestorer class
+    def load(cls, load_folder: str) -> 'NBSpaceRestorer':
+        """Load a previously saved instance of the class.
 
-        Required arguments:
-        -------------------
-        root_folder: str            The folder that contains all instance
-                                    assets (i.e. the folder passed as
-                                    root_folder when the instance was
-                                    initialized).
+        Args:
+          load_folder (str):
+            The root folder that contains the instance assets
+            (the same path that was passed as save_folder when the
+            class instance was initialized.)
+
+        Returns:
+          NBSpaceRestorer:
+            The loaded class instance.
         """
 
         self = cls.__new__(cls)
-        self.root_folder = root_folder
+        self.root_folder = load_folder
         self.unigram_freqs, self.bigram_freqs = \
             self.get_freqs()
         print(MESSAGE_FINISHED_LOADING)
@@ -123,7 +128,7 @@ class NBSpaceRestorer():
         return freqs['unigram_freqs'], freqs['bigram_freqs']
 
     # ====================
-    def get_pdists(self):
+    def get_pdists(self):        
         """Get unigram and bigram probability distributions from unigram
         and bigram frequencies"""
 
@@ -137,28 +142,65 @@ class NBSpaceRestorer():
                        for bigram, freq in self.bigram_freqs.items()}
 
     # ====================
-    def splits(self, text) -> list:
-        """Split text into a list of candidate (word, remainder) pairs."""
+    def splits(self, text: str) -> List[tuple]:
+        """Split text into a list of candidate (word, remainder) pairs.
+
+        Args:
+          text (str):
+            An unspaced input text
+
+        Returns:
+          List[tuple]:
+            A list of candidate (word, remainder) pairs
+        """
+
         return [
             (text[:i+1], text[i+1:]) for i in range(min(len(text), self.L))
         ]
 
     # ====================
     @staticmethod
-    def product(lis_: list):
-        """Product of a list of numbers"""
+    def product(lis_: List[float]) -> float:
+        """Product of a list of numbers
+
+        Args:
+          lis_ (List[float]):
+            A list of floats
+
+        Returns:
+          float:
+            The product of the floats in the input list
+        """
 
         return reduce(operator.mul, lis_, 1)
 
     # ====================
-    def Pwords(self, words: list) -> float:
-        """Get NB probability of a sequence of words"""
+    def Pwords(self, words: List[str]) -> float:
+        """Get Naive Bayes probability of a sequence of words.
+
+        Args:
+          words (List[str]):
+            A list of words
+
+        Returns:
+          float:
+            The NB probability
+        """
 
         return self.product(self.Pw(w) for w in words)
 
     # ====================
     def Pw(self, word: str) -> float:
-        """Get NB probability of a single word"""
+        """Get Naive Bayes probability of a single word
+
+        Args:
+          word (str):
+            A single candidate word
+
+        Returns:
+          float:
+            The NB probability
+        """
 
         if word in self.Pdist:
             return self.Pdist[word]
@@ -167,8 +209,16 @@ class NBSpaceRestorer():
             return self.lambda_/(self.N * 10 ** len(word))
 
     # ====================
-    def cPw(self, word: str, prev: str) -> float:
-        """Get conditional probability of a word given the previous word"""
+    def cPw(self, word: str, prev: str) -> float:        
+        """Get the conditional probability of a word given the previous word.
+
+        Args:
+          word (str): The candidate word
+          prev (str): The previous word
+
+        Returns:
+            float: The Naive Bayes probability
+        """
 
         try:
             return self.P2dist[prev + '_' + word] / float(self.Pw(prev))
@@ -176,9 +226,22 @@ class NBSpaceRestorer():
             return self.Pw(word)
 
     # ====================
-    def combine(self, Pfirst: float, first: str, rem_: list):
+    def combine(self,
+                Pfirst: float,
+                first: str,
+                rem_: List['str']) -> Tuple[float, list]:
         """Combine a single word and its probability with a list of remaining
-        words and its probability to output a (float, list) tuple."""
+        words and its probability to output a (float, list) tuple.
+
+        Args:
+          Pfirst (float): Probability of the first word
+          first (str): The first word
+          rem_ (list): The remaining words
+
+        Returns:
+          Tuple[float, list]:
+            
+        """
 
         Prem, rem = rem_
         return Pfirst + Prem, [first] + rem
