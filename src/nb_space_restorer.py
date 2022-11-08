@@ -7,12 +7,12 @@ import os
 from collections import Counter
 from functools import lru_cache, reduce
 from math import log10
-from typing import List, Tuple
+from typing import List, Tuple, Optional, Union
 
 import nltk
 import psutil
 
-from src.nb_helper import (Str_or_List, get_tqdm, load_pickle,
+from src.nb_helper import (get_tqdm, load_pickle,
                            mk_dir_if_does_not_exist, save_pickle)
 from src.nb_space_restorer_grid_search import NBSpaceRestorerGridSearch
 
@@ -36,7 +36,7 @@ class NBSpaceRestorer():
     def __init__(self,
                  train_texts: list,
                  ignore_case: bool = True,
-                 save_folder: str = None):
+                 save_folder: Optional[str] = None):
         """Initalize and train an instance of the class.
 
         Args:
@@ -47,7 +47,7 @@ class NBSpaceRestorer():
             Whether or not to ignore case during training (so that e.g.
             'banana', 'Banana', and 'BANANA' are all counted as instances
             of 'banana'). Defaults to True.
-          save_folder (str, optional):
+          save_folder (Optional[str], optional):
             If specified, model assets are saved to the folder at the path
             specified so that the model can be loaded later. Defaults to None.
 
@@ -61,8 +61,8 @@ class NBSpaceRestorer():
                 raise ValueError(ERROR_FOLDER_EXISTS)
             mk_dir_if_does_not_exist(save_folder)
             self.root_folder = save_folder
-        self.unigram_freqs = Counter()
-        self.bigram_freqs = Counter()
+        self.unigram_freqs: Counter = Counter()
+        self.bigram_freqs: Counter = Counter()
         for text in train_texts:
             if ignore_case:
                 text = text.lower()
@@ -128,7 +128,7 @@ class NBSpaceRestorer():
         return freqs['unigram_freqs'], freqs['bigram_freqs']
 
     # ====================
-    def get_pdists(self):        
+    def get_pdists(self):
         """Get unigram and bigram probability distributions from unigram
         and bigram frequencies"""
 
@@ -187,7 +187,7 @@ class NBSpaceRestorer():
             The NB probability
         """
 
-        return self.product(self.Pw(w) for w in words)
+        return self.product([self.Pw(w) for w in words])
 
     # ====================
     def Pw(self, word: str) -> float:
@@ -209,12 +209,14 @@ class NBSpaceRestorer():
             return self.lambda_/(self.N * 10 ** len(word))
 
     # ====================
-    def cPw(self, word: str, prev: str) -> float:        
+    def cPw(self, word: str, prev: str) -> float:
         """Get the conditional probability of a word given the previous word.
 
         Args:
-          word (str): The candidate word
-          prev (str): The previous word
+          word (str):
+            The candidate word
+          prev (str):
+            The previous word
 
         Returns:
             float: The Naive Bayes probability
@@ -229,18 +231,22 @@ class NBSpaceRestorer():
     def combine(self,
                 Pfirst: float,
                 first: str,
-                rem_: List['str']) -> Tuple[float, list]:
-        """Combine a single word and its probability with a list of remaining
-        words and its probability to output a (float, list) tuple.
+                rem_: Tuple[float, list]) -> Tuple[float, list]:
+        """Combine the probability of a word, the word, and list of remaining
+        words together with their probability to return the combined
+        probability and combined list of words.
 
         Args:
-          Pfirst (float): Probability of the first word
-          first (str): The first word
-          rem_ (list): The remaining words
+          Pfirst (float):
+            Probability of the first word
+          first (str):
+            The first word
+          rem_ (Tuple[float, list]):
+            The probability of the remaining words, and the list of words
 
         Returns:
           Tuple[float, list]:
-            
+            The combined probability and combined list of words
         """
 
         Prem, rem = rem_
@@ -248,11 +254,23 @@ class NBSpaceRestorer():
 
     # ====================
     @lru_cache(maxsize=MAX_CACHE_SIZE)
-    def restore_chunk(self, text_: str, prev='<S>') -> list:
+    def restore_chunk(self, text_: str, prev='<S>') -> Tuple[float, list]:
         """Restore spaces to a short string of input characters
 
         Will result in RecursionError if length of text_ is more than
-        around 100."""
+        around 100.
+
+        Args:
+          text_ (str):
+            The text to restore spaces to.
+          prev (str, optional):
+            The previous word. Defaults to '<S>'.
+
+        Returns:
+          Tuple[float, list]:
+            The probability of the most likely split, and the list of
+            words
+        """
 
         if not text_:
             return 0.0, []
@@ -263,13 +281,27 @@ class NBSpaceRestorer():
         return max(candidates)
 
     # ====================
-    def restore_doc(self, text: str, show_chunks=False) -> list:
+    def restore_doc(self,
+                    text: str,
+                    show_chunks: bool = False) -> str:
         """Restore spaces to a string of input characters of arbitrary
         length.
 
         For strings over around 100 characters in length, break them
         into chunks for segmentation and then put the words back together
-        to avoid recursion limit errors."""
+        to avoid recursion limit errors.
+
+        Args:
+          text (str):
+            The text to restore spaces to
+          show_chunks (bool, optional):
+            Whether to print out information about each chunk.
+            Defaults to False.
+
+        Returns:
+          str:
+            The document with spaces restored
+        """
 
         chunk_len_chars = 80   # Low enough to avoid recursion errors
         all_words = []
@@ -301,36 +333,28 @@ class NBSpaceRestorer():
 
     # ====================
     def restore(self,
-                texts: Str_or_List,
+                texts: Union[str, List[str]],
                 L: int = 20,
-                lambda_: float = 10.0) -> str:
+                lambda_: float = 10.0) -> Union[str, List[str]]:
         """Restore spaces to either a single string, or a list of
         strings.
 
-        If the input is a single string, the output will also be
-        a single string.
-        If the input is a list of strings, the output will be a
-        list of the same length as the input.
+        Args:
+          texts (Union[str, List[str]]):
+            Either a single string of input characters not containing spaces
+            (e.g. 'thisisasentence') or a list of such strings
+          L (int, optional):
+            The maximum possible word length to consider during inference.
+            Inference time increases with L as more probabilities need to
+            be calculated. Defaults to 20.
+          lambda_ (float, optional):
+            The smoothing parameter to use during inference. Higher values
+            of lambda_ cause higher probabilities to be assigned to words
+            not learnt during training.
 
-        Required arguments:
-        -------------------
-        texts: Str_or_List          Either a single string of input
-                                    characters, or a list of strings
-                                    of input characters.
-                                    Input strings should not contain
-                                    spaces (e.g. 'thisisasentence')
-
-        Optional keyword arguments:
-        ---------------------------
-        L: int = 20                 The maximum possible word length to
-                                    consider during inference. Inference
-                                    time increases with L as more probabilities
-                                    need to be calculated.
-
-        lambda_ = 10.0              The smoothing parameter to use during
-                                    inference. Higher values of lambda_ cause
-                                    higher probabilities to be assigned to
-                                    words not learnt during training.
+        Returns:
+          Union[str, List[str]]:
+            The string or list of strings with spaces restored
         """
 
         self.set_L(L)

@@ -1,6 +1,6 @@
 import os
 import pickle
-from typing import Any, Union
+from typing import Any
 
 from tqdm import tqdm as non_notebook_tqdm
 from tqdm.notebook import tqdm as notebook_tqdm
@@ -9,8 +9,6 @@ try:
     from IPython.display import clear_output
 except:
     pass
-
-Str_or_List = Union[str, list]
 
 
 # ====================
