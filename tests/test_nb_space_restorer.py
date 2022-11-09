@@ -1,4 +1,4 @@
-from src.nb_space_restorer import NBSpaceRestorer
+from nb_space_restorer.nb_space_restorer import NBSpaceRestorer
 import pandas as pd
 
 train = pd.read_csv('sample_data/train.csv')['reference'].to_list()

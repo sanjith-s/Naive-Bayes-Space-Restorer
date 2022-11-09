@@ -4,7 +4,7 @@ import time
 import pandas as pd
 from sklearn.model_selection import ParameterGrid
 
-from src.nb_helper import (display_or_print, load_pickle,
+from nb_space_restorer.nb_helper import (display_or_print, load_pickle,
                            mk_dir_if_does_not_exist, save_pickle,
                            try_clear_output)
 

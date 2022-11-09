@@ -12,9 +12,9 @@ from typing import List, Tuple, Optional, Union
 import nltk
 import psutil
 
-from src.nb_helper import (get_tqdm, load_pickle,
+from nb_space_restorer.nb_helper import (get_tqdm, load_pickle,
                            mk_dir_if_does_not_exist, save_pickle)
-from src.nb_space_restorer_grid_search import NBSpaceRestorerGridSearch
+from nb_space_restorer.nb_space_restorer_grid_search import NBSpaceRestorerGridSearch
 
 tqdm_ = get_tqdm()
 
