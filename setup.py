@@ -5,8 +5,8 @@ REQUIREMENTS = [
     'pandas',
     'tqdm',
     'psutil',
-    'sklearn'
-    # 'git+https://github.com/ljdyer/feature-restoration-evaluator.git'
+    'sklearn',
+    'fre @ git+ssh://git@github.com/ljdyer/feature-restoration-evaluator@main#egg=fre'
 ]
 
 setup(
