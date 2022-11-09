@@ -1,6 +1,6 @@
 # Naive Bayes Space Restorer
 
-A Python class to enable convenient training of a Naive Bayes-based statistical model for restoration of spaces to unsegmented streams of input characters.
+A Python library that enables convenient training of Naive Bayes-based statistical machine learning models for restoring spaces to unsegmented sequences of input characters.
 
 E.g.
 `thisisasentence -> this is a sentence`
