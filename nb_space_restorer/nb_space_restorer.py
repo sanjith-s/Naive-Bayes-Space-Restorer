@@ -7,14 +7,15 @@ import os
 from collections import Counter
 from functools import lru_cache, reduce
 from math import log10
-from typing import List, Tuple, Optional, Union
+from typing import List, Optional, Tuple, Union
 
 import nltk
 import psutil
 
 from nb_space_restorer.nb_helper import (get_tqdm, load_pickle,
-                           mk_dir_if_does_not_exist, save_pickle)
-from nb_space_restorer.nb_space_restorer_grid_search import NBSpaceRestorerGridSearch
+                                         mk_dir_if_does_not_exist, save_pickle)
+from nb_space_restorer.nb_space_restorer_grid_search import \
+    NBSpaceRestorerGridSearch
 
 tqdm_ = get_tqdm()
 
