@@ -77,7 +77,10 @@ class NBSpaceRestorerGridSearch:
             start_time = time.time()
             hyp = self.parent.restore(self.input, L=L, lambda_=lambda_)
             evaluator = FeatureRestorationEvaluator(
-                self.ref, hyp, capitalisation=False, feature_chars=' ',
+                self.ref,
+                hyp,
+                capitalization=False,
+                feature_chars=' ',
                 get_wer_info_on_init=False
             )
             prf = evaluator.get_prfs()[' ']
