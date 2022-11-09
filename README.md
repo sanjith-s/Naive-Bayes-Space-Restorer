@@ -27,7 +27,7 @@ sys.path.append('naive-bayes-space-restorer/src')
 
 ### 2. Install requirements
 
-The FeatureRestorerMetricGetter class from the Feature Restorer Metric Getter library is required in order to use grid search features.
+The FeatureRestorationMetricGetter class from the Feature Restorer Metric Getter library is required in order to use grid search features.
 
 To install it in Google Colab, run the following:
 
@@ -35,7 +35,7 @@ To install it in Google Colab, run the following:
 !rm -rf 'feature-restorer-metric-getter'
 !git clone https://github.com/ljdyer/feature-restorer-metric-getter.git
 sys.path.append('feature-restorer-metric-getter/src')
-from feature_restorer_metric_getter import FeatureRestorerMetricGetter
+from feature_restorer_metric_getter import FeatureRestorationMetricGetter
 ```
 
 If working in Google Colab, all other requirements are install by default.
