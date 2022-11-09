@@ -380,10 +380,26 @@ class NBSpaceRestorer():
     # ====================
     def add_grid_search(self,
                         grid_search_name: str,
-                        L: list,
-                        lambda_: list,
-                        ref: list,
-                        input: list):
+                        L: List[int],
+                        lambda_: List[float],
+                        ref: List[str],
+                        input: List[str]):
+        """Add a new grid search to the model to ascertain optimal
+        hyperparameters for inference
+
+        Args:
+          grid_search_name (str):
+            The name of the new grid search. Must be a valid folder
+            name if the model has a save folder.
+          L (List[int]):
+            List of candidate values for L (e.g. [18, 20, 22])
+          lambda_ (List[float]):
+            List of candidate values for lambda_ (e.g. [8.0, 10.0, 12.0])
+          ref (List[str]):
+            List of reference strings (documents with spaces)
+          input (List[str]):
+            List of input strings (documents without spaces)
+        """
 
         attrs = locals()
         del attrs['self']
