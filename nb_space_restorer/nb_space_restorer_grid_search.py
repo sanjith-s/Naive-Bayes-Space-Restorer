@@ -112,14 +112,17 @@ class NBSpaceRestorerGridSearch:
     # ====================
     def get_log_df(self) -> pd.DataFrame:
 
-        log_path = self.log_path()
-        if os.path.exists(log_path):
-            log_df = pd.read_csv(log_path)
-        else:
+        if hasattr(self.parent, 'root_folder'):
+            log_path = self.log_path()
+            if os.path.exists(log_path):
+                log_df = pd.read_csv(log_path)
+        try:
+            return log_df
+        except NameError:
             log_df = pd.DataFrame(columns=LOG_DF_COLS)
             if hasattr(self.parent, 'root_folder'):
                 log_df.to_csv(log_path, index=False)
-        return log_df
+            return log_df
 
     # ====================
     def save_log(self, log: pd.DataFrame):
