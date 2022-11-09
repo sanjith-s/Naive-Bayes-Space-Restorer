@@ -6,7 +6,7 @@ REQUIREMENTS = [
     'tqdm',
     'psutil',
     'sklearn',
-    'fre @ git+ssh://git@github.com/ljdyer/feature-restoration-evaluator@main#egg=fre'
+    'fre @ git+https://github.com/ljdyer/feature-restoration-evaluator.git'
 ]
 
 setup(
