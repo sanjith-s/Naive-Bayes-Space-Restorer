@@ -5,8 +5,8 @@ import pandas as pd
 from sklearn.model_selection import ParameterGrid
 
 from nb_space_restorer.nb_helper import (display_or_print, load_pickle,
-                           mk_dir_if_does_not_exist, save_pickle,
-                           try_clear_output)
+                                         mk_dir_if_does_not_exist, save_pickle,
+                                         try_clear_output)
 
 LOG_DF_COLS = ['i', 'L', 'lambda_', 'Precision', 'Recall', 'F-score', 'Time']
 
@@ -17,15 +17,15 @@ new grid search name."""
 MESSAGE_SKIPPING_PARAMS = """\
 Skipping parameter combination at index {i} because results \
 are already in the grid search log."""
-WARNING_NO_METRIC_GETTER = """\
-Warning: Unable to import FeatureRestorerMetricGetter. You will be unable to \
+WARNING_NO_EVALUATOR = """\
+Warning: Unable to import FeatureRestorerEvaluator. You will be unable to \
 use grid search features. See the documentation for help.
 """
 
 try:                       
-    from feature_restorer_metric_getter import FeatureRestorerMetricGetter
+    from fre import FeatureRestorerEvaluator
 except ModuleNotFoundError:
-    print(WARNING_NO_METRIC_GETTER)
+    print(WARNING_NO_EVALUATOR)
 
 # ====================
 class NBSpaceRestorerGridSearch:
@@ -83,7 +83,7 @@ class NBSpaceRestorerGridSearch:
             print('L =', L, '; lambda_ =', lambda_)
             start_time = time.time()
             hyp = self.parent.restore(self.input, L=L, lambda_=lambda_)
-            frmg = FeatureRestorerMetricGetter(
+            frmg = FeatureRestorerEvaluator(
                 self.ref, hyp, capitalisation=False, feature_chars=' ',
                 get_wer_info_on_init=False
             )
