@@ -140,8 +140,8 @@ class NBSpaceRestorerGridSearch:
     # ====================
     def show_max(self, col: str = 'F-score'):
 
-        log_df = self.get_log_df()
-        col_vals = log_df[col].to_list()
+        self.get_log_df()
+        col_vals = self.log_df[col].to_list()
         max_val = max(col_vals)
-        max_row = log_df[log_df[col] == max_val]
+        max_row = self.log_df[self.log_df[col] == max_val]
         display_or_print(max_row)
