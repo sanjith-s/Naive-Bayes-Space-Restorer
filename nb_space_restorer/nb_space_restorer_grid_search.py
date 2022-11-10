@@ -47,7 +47,7 @@ class NBSpaceRestorerGridSearch:
                         grid_search_name=self.grid_search_name)
                 )
             mk_dir_if_does_not_exist(self.root_folder())
-            save_pickle(self.__dict__, self.attrs_path())
+            self.save_attrs()
         self.run_grid_search()
 
     # ====================
@@ -62,13 +62,20 @@ class NBSpaceRestorerGridSearch:
         return self
 
     # ====================
+    def save_attrs(self):
+
+        attrs = self.__dict__.copy()
+        attrs['log_df'] = None
+        save_pickle(attrs, self.attrs_path())
+
+    # ====================
     def run_grid_search(self):
 
-        log_df = self.get_log_df()
+        self.get_log_df()
         for i, parameters in enumerate(self.param_combos):
             try_clear_output()
-            display_or_print(log_df)
-            if len(log_df[log_df['i'] == i]) > 0:
+            display_or_print(self.log_df)
+            if len(self.log_df[self.log_df['i'] == i]) > 0:
                 print(MESSAGE_SKIPPING_PARAMS.format(i=i))
                 continue
             L = parameters['L']
@@ -85,13 +92,13 @@ class NBSpaceRestorerGridSearch:
             )
             prf = evaluator.get_prfs()[' ']
             time_taken = time.time() - start_time
-            log_df = log_df.append(
+            self.log_df = self.log_df.append(
                 {'i': i, 'L': L, 'lambda_': lambda_, **prf,
                  'Time': time_taken},
                 ignore_index=True
             )
             if hasattr(self.parent, 'root_folder'):
-                self.save_log(log_df)
+                self.save_log()
             self.parent.restore_chunk.cache_clear()
 
     # ====================
@@ -118,19 +125,17 @@ class NBSpaceRestorerGridSearch:
         if hasattr(self.parent, 'root_folder'):
             log_path = self.log_path()
             if os.path.exists(log_path):
-                log_df = pd.read_csv(log_path)
-        try:
-            return log_df
-        except NameError:
-            log_df = pd.DataFrame(columns=LOG_DF_COLS)
+                self.log_df = pd.read_csv(log_path)
+                return
+        if not hasattr(self, 'log_df'):
+            self.log_df = pd.DataFrame(columns=LOG_DF_COLS)
             if hasattr(self.parent, 'root_folder'):
-                log_df.to_csv(log_path, index=False)
-            return log_df
+                self.save_log()
 
     # ====================
-    def save_log(self, log: pd.DataFrame):
+    def save_log(self):
 
-        log.to_csv(self.log_path(), index=False)
+        self.log_df.to_csv(self.log_path(), index=False)
 
     # ====================
     def show_max(self, col: str = 'F-score'):
