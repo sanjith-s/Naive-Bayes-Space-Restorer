@@ -409,16 +409,16 @@ class NBSpaceRestorer():
         param_combos = self.current_grid_search()['param_combos']
         for i, parameters in param_combos.keys():
             try_clear_output()
-            if self.current_grid_search()[i] is not None:
+            if self.current_grid_search()['results'][i] is not None:
                 print(MESSAGE_SKIPPING_PARAMS.format(i=i))
                 continue
             L = parameters['L']
             lambda_ = parameters['lambda']
             print('L =', L, '; lambda =', lambda_)
             start_time = time.time()
-            hyp = self.restore(self.input, L=L, lambda_=lambda_)
+            hyp = self.restore(input, L=L, lambda_=lambda_)
             evaluator = FeatureRestorationEvaluator(
-                self.ref,
+                ref,
                 hyp,
                 capitalization=False,
                 feature_chars=' ',
