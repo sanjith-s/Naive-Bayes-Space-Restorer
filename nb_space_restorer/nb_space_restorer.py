@@ -426,7 +426,7 @@ class NBSpaceRestorer():
             )
             prf = evaluator.get_prfs()[' ']
             time_taken = time.time() - start_time
-            self.current_grid_search().results[i] = {
+            self.current_grid_search()['results'][i] = {
                 'i': i, 'L': L, 'lambda': lambda_,
                 **prf, 'Time': time_taken
             }
