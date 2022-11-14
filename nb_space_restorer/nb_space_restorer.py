@@ -412,7 +412,7 @@ class NBSpaceRestorer():
             print(MESSAGE_GRID_SEARCH_INCOMPLETE.format(
                 grid_search_name=grid_search_name,
                 num_untested=total-completed
-            )
+            ))
 
     # ====================
     def current_grid_search(self):
