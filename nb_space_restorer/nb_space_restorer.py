@@ -19,8 +19,6 @@ from sklearn.model_selection import ParameterGrid
 from nb_space_restorer.nb_helper import (display_or_print, get_tqdm,
                                          load_pickle, mk_dir_if_does_not_exist,
                                          save_pickle, try_clear_output)
-from nb_space_restorer.nb_space_restorer_grid_search import \
-    NBSpaceRestorerGridSearch
 
 MESSAGE_SKIPPING_PARAMS = """\
 Skipping parameter combination at index {i} because results \
@@ -411,7 +409,7 @@ class NBSpaceRestorer():
         self.grid_search_name = grid_search_name
         completed, total = self.param_combos_completed()
         if total > completed:
-            print(MESSAGE_GRID_SEARCH_INCOMPLETE).format(
+            print(MESSAGE_GRID_SEARCH_INCOMPLETE.format(
                 grid_search_name=grid_search_name,
                 num_untested=total-completed
             )
