@@ -471,17 +471,13 @@ class NBSpaceRestorer():
     def run_grid_search(self, ref: List[str], input: List[str]):
 
         param_combos = self.current_grid_search()['param_combos']
-        L = self.L
-        lambda_ = self.lambda_
+        L_start = self.L
+        lambda_start = self.lambda_
         for i, parameters in param_combos.items():
             self.running_grid_search = True
             try_clear_output()
             display_or_print(self.grid_search_results_df())
-            completed, total = self.param_combos_completed()
-            print(MESSAGE_TESTED_SO_FAR.format(
-                completed=completed,
-                total=total
-            ))
+            self.show_param_combos_completed()
             print()
             if self.current_grid_search()['results'][i] is not None:
                 print(MESSAGE_SKIPPING_PARAMS.format(i=i))
@@ -505,10 +501,13 @@ class NBSpaceRestorer():
                 **prf, 'Time (s)': time_taken
             }
             self.restore_chunk.cache_clear()
-            self.set_L(L)
-            self.set_lambda(lambda_)
+            self.set_L(L_start)
+            self.set_lambda(lambda_start)
             self.running_grid_search = False
             self.save()
+        try_clear_output()
+        display_or_print(self.grid_search_results_df())
+        self.show_param_combos_completed()
 
     # ====================
     def grid_search_results_df(self) -> pd.DataFrame:
@@ -592,3 +591,12 @@ class NBSpaceRestorer():
         )
         self.set_L(L)
         self.set_lambda(lambda_)
+
+    # ====================
+    def show_param_combos_completed(self):
+
+        completed, total = self.param_combos_completed()
+        print(MESSAGE_TESTED_SO_FAR.format(
+            completed=completed,
+            total=total
+        ))
