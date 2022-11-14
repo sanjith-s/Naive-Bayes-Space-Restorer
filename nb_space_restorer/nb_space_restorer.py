@@ -409,6 +409,7 @@ class NBSpaceRestorer():
         param_combos = self.current_grid_search()['param_combos']
         for i, parameters in param_combos.items():
             try_clear_output()
+            self.display_current_grid_search_results()
             if self.current_grid_search()['results'][i] is not None:
                 print(MESSAGE_SKIPPING_PARAMS.format(i=i))
                 continue
@@ -430,7 +431,6 @@ class NBSpaceRestorer():
                 'i': i, 'L': L, 'lambda': lambda_,
                 **prf, 'Time': time_taken
             }
-            self.display_current_grid_search_results()
             self.restore_chunk.cache_clear()
 
     # ====================
