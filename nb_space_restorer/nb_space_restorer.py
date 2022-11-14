@@ -3,46 +3,55 @@
 Defines the NBSpaceRestorer class"""
 
 import operator
-import os
 import time
 from collections import Counter
 from functools import lru_cache, reduce
 from math import log10
 from typing import List, Optional, Tuple, Union
-import pandas as pd
 
 import nltk
+import pandas as pd
 import psutil
 from fre import FeatureRestorationEvaluator
 from sklearn.model_selection import ParameterGrid
 
 from nb_space_restorer.nb_helper import (display_or_print, get_tqdm,
-                                         load_pickle, mk_dir_if_does_not_exist,
-                                         save_pickle, try_clear_output)
-
-MESSAGE_SKIPPING_PARAMS = """\
-Skipping parameter combination at index {i} because results \
-are already in the grid search log."""
+                                         load_pickle, save_pickle,
+                                         try_clear_output)
 
 tqdm_ = get_tqdm()
 
 MAX_CACHE_SIZE = 10_000_000
 L_DEFAULT = 20
 LAMBDA_DEFAULT = 10.0
+METRIC_TO_OPTIMIZE_DEFAULT = 'F-score'
+MIN_OR_MAX_DEFAULT = 'max'
 
 ERROR_FOLDER_EXISTS = """\
 There is already a NB Space Restorer at this path. \
 Either choose a new path, or load the existing NB Space Restorer"""
+ERROR_MIN_OR_MAX = """
+min_or_max should be one of either "min" or "max"
+"""
+
 MESSAGE_FINISHED_LOADING = "Finished loading model."
-MESSAGE_TRAINING_COMPLETE = "Training complete."
-MESSAGE_SAVED = "Model saved to {}."
 MESSAGE_GRID_SEARCH_INCOMPLETE = """
-Grid search {grid_search_name} is incomplete. There are {num_untested}
+Grid search {grid_search_name} is incomplete. There are {num_untested} \
 parameter combinations that have not been tested. To resume the grid \
 search, call the run_grid_search method with the same reference and \
 input texts you used when you added the grid search."""
+MESSAGE_OPTIMAL_PARAMS = """
+Optimal hyperparameter values based on the results of the current grid
+search are L={L} and lambda={lambda_}. Run set_optimal_params to set these
+values for the current model.
+"""
+MESSAGE_SAVED = "Model saved to {}."
+MESSAGE_SKIPPING_PARAMS = """\
+Skipping parameter combination at index {i} because results \
+are already in the grid search log."""
 MESSAGE_TESTED_SO_FAR = """
 {completed}/{total} parameter combinations tested so far."""
+MESSAGE_TRAINING_COMPLETE = "Training complete."
 
 
 # ====================
@@ -72,6 +81,10 @@ class NBSpaceRestorer():
         """
 
         self.save_path = save_path
+        self.L = L_DEFAULT
+        self.lambda_ = LAMBDA_DEFAULT
+        self.metric_to_optimize = METRIC_TO_OPTIMIZE_DEFAULT
+        self.min_or_max = MIN_OR_MAX_DEFAULT
         self.unigram_freqs: Counter = Counter()
         self.bigram_freqs: Counter = Counter()
         for text in train_texts:
@@ -118,6 +131,7 @@ class NBSpaceRestorer():
         self.__dict__ = load_pickle(load_path)
         self.save_path = load_path
         print(MESSAGE_FINISHED_LOADING)
+        self.save()
         return self
 
     # ====================
@@ -371,11 +385,32 @@ class NBSpaceRestorer():
     def set_L(self, L: int):
 
         self.L = L
+        self.save()
 
     # ====================
     def set_lambda(self, lambda_: float):
 
         self.lambda_ = lambda_
+        self.save()
+
+    # ====================
+    def set_metric_to_optimize(self, metric_to_optimize: str):
+
+        if metric_to_optimize is None:
+            return
+        self.metric_to_optimize = metric_to_optimize
+        self.save()
+
+    # ====================
+    def set_min_or_max(self, min_or_max: str):
+
+        if min_or_max is None:
+            return
+        min_or_max = min_or_max.lower()
+        if min_or_max not in ['min', 'max']:
+            raise ValueError(ERROR_MIN_OR_MAX)
+        self.min_or_max = min_or_max
+        self.save()
 
     # === GRID SEARCH ===
 
@@ -401,6 +436,7 @@ class NBSpaceRestorer():
             {i: pc for i, pc in enumerate(param_combos)}
         self.current_grid_search()['results'] = \
             {i: None for i in range(len(param_combos))}
+        self.save()
         self.run_grid_search(ref, input)
 
     # ====================
@@ -454,6 +490,7 @@ class NBSpaceRestorer():
                 **prf, 'Time (s)': time_taken
             }
             self.restore_chunk.cache_clear()
+            self.save()
 
     # ====================
     def grid_search_results_df(self) -> pd.DataFrame:
@@ -464,6 +501,7 @@ class NBSpaceRestorer():
             A pandas dataframe containing the results for all the
             parameter combinations tested so far.
         """
+
         results = self.current_grid_search()['results'].copy()
         results = {k: v for k, v in results.items() if v is not None}
         if len(results) > 0:
@@ -492,3 +530,46 @@ class NBSpaceRestorer():
         completed = len([r for r in results.values() if r is not None])
         total = len(results.keys())
         return completed, total
+
+    # ====================
+    def optimal_parameters_df(self,
+                              metric_to_optimize: Optional[str] = None,
+                              min_or_max: Optional[str] = None
+                              ) -> pd.DataFrame:
+
+        df = self.grid_search_results_df()
+        self.set_metric_to_optimize(metric_to_optimize)
+        self.set_min_or_max(min_or_max)
+        metric_vals = df[self.metric_to_optimize].to_list()
+        if self.min_or_max == 'max':
+            optimal_val = max(metric_vals)
+        elif self.min_or_max == 'min':
+            optimal_val = min(metric_vals)
+        max_rows = df[df[self.metric_to_optimize] == optimal_val]
+        return max_rows
+
+    # ====================
+    def optimal_parameters(self,
+                           metric_to_optimize: str = 'F-score',
+                           min_or_max: str = 'max') -> Tuple[int, int]:
+
+        df = self.optimal_parameters_df().reset_index()
+        self.set_metric_to_optimize(metric_to_optimize)
+        self.set_min_or_max(min_or_max)
+        L = df.iloc[0]['L']
+        lambda_ = df.iloc[0]['lambda_']
+        print(MESSAGE_OPTIMAL_PARAMS.format(
+            L=L,
+            lambda_=lambda_
+        ))
+
+    # ====================
+    def set_optimal_params(self,
+                           metric_to_optimize: str = 'F-score',
+                           min_or_max: str = 'max') -> Tuple[int, int]:
+
+        L, lambda_ = self.optimal_parameters(
+            metric_to_optimize, min_or_max
+        )
+        self.set_L(L)
+        self.set_lambda(lambda_)
