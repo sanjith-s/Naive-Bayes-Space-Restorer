@@ -363,6 +363,8 @@ class NBSpaceRestorer():
             The string or list of strings with spaces restored
         """
 
+        self.set_L(L)
+        self.set_lambda(lambda_)
         if isinstance(texts, str):
             return self.restore_doc(texts)
         if isinstance(texts, list):
