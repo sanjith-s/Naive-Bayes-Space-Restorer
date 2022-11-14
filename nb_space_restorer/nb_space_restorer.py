@@ -38,6 +38,13 @@ Either choose a new path, or load the existing NB Space Restorer"""
 MESSAGE_FINISHED_LOADING = "Finished loading model."
 MESSAGE_TRAINING_COMPLETE = "Training complete."
 MESSAGE_SAVED = "Model saved to {}."
+MESSAGE_GRID_SEARCH_INCOMPLETE = """
+Grid search {grid_search_name} is incomplete. There are {num_untested}
+parameter combinations that have not been tested. To resume the grid \
+search, call the run_grid_search method with the same reference and \
+input texts you used when you added the grid search."""
+MESSAGE_TESTED_SO_FAR = """
+{completed}/{total} parameter combinations tested so far."""
 
 
 # ====================
@@ -399,6 +406,17 @@ class NBSpaceRestorer():
         self.run_grid_search(ref, input)
 
     # ====================
+    def load_grid_search(self, grid_search_name: str):
+
+        self.grid_search_name = grid_search_name
+        completed, total = self.param_combos_completed()
+        if total > completed:
+            print(MESSAGE_GRID_SEARCH_INCOMPLETE).format(
+                grid_search_name=grid_search_name,
+                num_untested=total-completed
+            )
+
+    # ====================
     def current_grid_search(self):
 
         return self.grid_searches[self.current_grid_search_name]
@@ -409,7 +427,13 @@ class NBSpaceRestorer():
         param_combos = self.current_grid_search()['param_combos']
         for i, parameters in param_combos.items():
             try_clear_output()
-            self.display_current_grid_search_results()
+            display_or_print(self.grid_search_results_df())
+            completed, total = self.param_combos_completed()
+            print(MESSAGE_TESTED_SO_FAR.format(
+                completed=completed,
+                total=total
+            ))
+            print()
             if self.current_grid_search()['results'][i] is not None:
                 print(MESSAGE_SKIPPING_PARAMS.format(i=i))
                 continue
@@ -434,8 +458,14 @@ class NBSpaceRestorer():
             self.restore_chunk.cache_clear()
 
     # ====================
-    def display_current_grid_search_results(self):
+    def grid_search_results_df(self) -> pd.DataFrame:
+        """Get the results of the current grid search.
 
+        Returns:
+          pd.DataFrame
+            A pandas dataframe containing the results for all the
+            parameter combinations tested so far.
+        """
         results = self.current_grid_search()['results'].copy()
         results = {k: v for k, v in results.items() if v is not None}
         if len(results) > 0:
@@ -445,10 +475,22 @@ class NBSpaceRestorer():
             results_df['L'] = results_df['L'].astype(int)
         else:
             results_df = pd.DataFrame()
-        display_or_print(results_df)
+        return results_df
 
     # ====================
-    def load_grid_search(self,
-                         grid_search_name: str):
+    def param_combos_completed(self) -> Tuple[int, int]:
+        """Get information about parameter combinations completed
+        in the current grid search.
 
-        self.current_grid_search_name = grid_search_name
+        Returns:
+          Tuple[int, int]:
+            The first element is the number of parameter combinations
+            for which testing has been completed.
+            The second element is the total number of parameter
+            combinations
+        """
+
+        results = self.current_grid_search()['results'].copy()
+        completed = len([r for r in results.values() if r is not None])
+        total = len(results.keys())
+        return completed, total
