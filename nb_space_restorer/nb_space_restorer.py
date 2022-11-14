@@ -438,7 +438,7 @@ class NBSpaceRestorer():
 
         results = self.current_grid_search()['results'].copy()
         results = {k: v for k, v in results.items() if v is not None}
-        results_list = pd.DataFrame(results)
+        results_list = pd.DataFrame(results).transpose().set_index('i')
         display_or_print(results_list)
 
     # ====================
