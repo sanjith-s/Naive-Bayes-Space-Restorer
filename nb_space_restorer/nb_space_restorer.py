@@ -94,6 +94,7 @@ class NBSpaceRestorer():
         self.lambda_ = LAMBDA_DEFAULT
         self.metric_to_optimize = METRIC_TO_OPTIMIZE_DEFAULT
         self.min_or_max = MIN_OR_MAX_DEFAULT
+        self.running_grid_search = False
         self.unigram_freqs: Counter = Counter()
         self.bigram_freqs: Counter = Counter()
         for text in train_texts:
@@ -349,7 +350,9 @@ class NBSpaceRestorer():
 
     # ====================
     def restore(self,
-                texts: Union[str, List[str]]) -> Union[str, List[str]]:
+                texts: Union[str, List[str]],
+                L: Optional[int] = None,
+                lambda_: Optional[int] = None) -> Union[str, List[str]]:
         """Restore spaces to either a single string, or a list of
         strings.
 
@@ -357,6 +360,10 @@ class NBSpaceRestorer():
           texts (Union[str, List[str]]):
             Either a single string of input characters not containing spaces
             (e.g. 'thisisasentence') or a list of such strings
+          L (Optional[int], optional):
+            The value of the hyperparameter L to set before restoring
+          lambda_ (Optional[float], optional):
+            The value of the hyperparameter lambda_ to set before restoring
 
         Returns:
           Union[str, List[str]]:
@@ -382,15 +389,17 @@ class NBSpaceRestorer():
     def set_L(self, L: int):
 
         self.L = L
-        print(MESSAGE_L_SET.format(L=L))
-        self.save()
+        if self.running_grid_search is False:
+            print(MESSAGE_L_SET.format(L=L))
+            self.save()
 
     # ====================
     def set_lambda(self, lambda_: float):
 
         self.lambda_ = lambda_
-        print(MESSAGE_LAMBDA_SET.format(lambda_=lambda_))
-        self.save()
+        if self.running_grid_search is False:
+            print(MESSAGE_LAMBDA_SET.format(lambda_=lambda_))
+            self.save()
 
     # ====================
     def set_metric_to_optimize(self, metric_to_optimize: str):
@@ -462,7 +471,10 @@ class NBSpaceRestorer():
     def run_grid_search(self, ref: List[str], input: List[str]):
 
         param_combos = self.current_grid_search()['param_combos']
+        L = self.L
+        lambda_ = self.lambda_
         for i, parameters in param_combos.items():
+            self.running_grid_search = True
             try_clear_output()
             display_or_print(self.grid_search_results_df())
             completed, total = self.param_combos_completed()
@@ -493,6 +505,9 @@ class NBSpaceRestorer():
                 **prf, 'Time (s)': time_taken
             }
             self.restore_chunk.cache_clear()
+            self.set_L(L)
+            self.set_lambda(lambda_)
+            self.running_grid_search = False
             self.save()
 
     # ====================
