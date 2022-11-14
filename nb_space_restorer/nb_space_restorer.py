@@ -46,6 +46,15 @@ search are L={L} and lambda={lambda_}. Run set_optimal_params to set these
 values for the current model.
 """
 MESSAGE_SAVED = "Model saved to {}."
+MESSAGE_L_SET = """
+The value of the hyperparameter L was set to {L}"""
+MESSAGE_LAMBDA_SET = """
+The value of the hyperparameter lambda was set to {lambda}"""
+MESSAGE_METRIC_TO_OPTIMIZE_SET = """
+The metric to optimize was set to {metric_to_optimize}"""
+MESSAGE_MIN_OR_MAX_SET = """
+The setting of whether to minimize or maximize the optimization
+metric was set to: {min_or_max}"""
 MESSAGE_SKIPPING_PARAMS = """\
 Skipping parameter combination at index {i} because results \
 are already in the grid search log."""
@@ -340,9 +349,7 @@ class NBSpaceRestorer():
 
     # ====================
     def restore(self,
-                texts: Union[str, List[str]],
-                L: int = 20,
-                lambda_: float = 10.0) -> Union[str, List[str]]:
+                texts: Union[str, List[str]]) -> Union[str, List[str]]:
         """Restore spaces to either a single string, or a list of
         strings.
 
@@ -350,22 +357,12 @@ class NBSpaceRestorer():
           texts (Union[str, List[str]]):
             Either a single string of input characters not containing spaces
             (e.g. 'thisisasentence') or a list of such strings
-          L (int, optional):
-            The maximum possible word length to consider during inference.
-            Inference time increases with L as more probabilities need to
-            be calculated. Defaults to 20.
-          lambda_ (float, optional):
-            The smoothing parameter to use during inference. Higher values
-            of lambda_ cause higher probabilities to be assigned to words
-            not learnt during training.
 
         Returns:
           Union[str, List[str]]:
             The string or list of strings with spaces restored
         """
 
-        self.set_L(L)
-        self.set_lambda(lambda_)
         if isinstance(texts, str):
             return self.restore_doc(texts)
         if isinstance(texts, list):
@@ -385,12 +382,14 @@ class NBSpaceRestorer():
     def set_L(self, L: int):
 
         self.L = L
+        print(MESSAGE_L_SET.format(L=L))
         self.save()
 
     # ====================
     def set_lambda(self, lambda_: float):
 
         self.lambda_ = lambda_
+        print(MESSAGE_LAMBDA_SET.format(lambda_=lambda_))
         self.save()
 
     # ====================
@@ -399,6 +398,9 @@ class NBSpaceRestorer():
         if metric_to_optimize is None:
             return
         self.metric_to_optimize = metric_to_optimize
+        print(MESSAGE_METRIC_TO_OPTIMIZE_SET.format(
+            metric_to_optimize=metric_to_optimize
+        ))
         self.save()
 
     # ====================
@@ -410,6 +412,7 @@ class NBSpaceRestorer():
         if min_or_max not in ['min', 'max']:
             raise ValueError(ERROR_MIN_OR_MAX)
         self.min_or_max = min_or_max
+        print(MESSAGE_MIN_OR_MAX_SET.format(min_or_max=min_or_max))
         self.save()
 
     # === GRID SEARCH ===
@@ -550,8 +553,9 @@ class NBSpaceRestorer():
 
     # ====================
     def optimal_parameters(self,
-                           metric_to_optimize: str = 'F-score',
-                           min_or_max: str = 'max') -> Tuple[int, int]:
+                           metric_to_optimize: Optional[str] = None,
+                           min_or_max: Optional[str] = None
+                           ) -> Tuple[int, int]:
 
         df = self.optimal_parameters_df().reset_index()
         self.set_metric_to_optimize(metric_to_optimize)
@@ -565,8 +569,8 @@ class NBSpaceRestorer():
 
     # ====================
     def set_optimal_params(self,
-                           metric_to_optimize: str = 'F-score',
-                           min_or_max: str = 'max') -> Tuple[int, int]:
+                           metric_to_optimize: Optional[str] = None,
+                           min_or_max: Optional[str] = None):
 
         L, lambda_ = self.optimal_parameters(
             metric_to_optimize, min_or_max
