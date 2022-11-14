@@ -337,7 +337,7 @@ class NBSpaceRestorer():
         """
 
         self.set_L(L)
-        self.set_lambda_(lambda_)
+        self.set_lambda(lambda_)
         if isinstance(texts, str):
             return self.restore_doc(texts)
         if isinstance(texts, list):
@@ -362,7 +362,6 @@ class NBSpaceRestorer():
     def set_lambda(self, lambda_: float):
 
         self.lambda_ = lambda_
-    
 
     # === GRID SEARCH ===
 
