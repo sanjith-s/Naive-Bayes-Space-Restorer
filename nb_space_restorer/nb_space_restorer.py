@@ -429,7 +429,7 @@ class NBSpaceRestorer():
             time_taken = time.time() - start_time
             self.current_grid_search()['results'][i] = {
                 'i': i, 'L': L, 'lambda': lambda_,
-                **prf, 'Time': time_taken
+                **prf, 'Time (s)': time_taken
             }
             self.restore_chunk.cache_clear()
 
@@ -440,6 +440,8 @@ class NBSpaceRestorer():
         results = {k: v for k, v in results.items() if v is not None}
         if len(results) > 0:
             results_df = pd.DataFrame(results).transpose().set_index('i')
+            results_df['i'] = results_df['i'].astype(int)
+            results_df['L'] = results_df['L'].astype(int)
         else:
             results_df = pd.DataFrame()
         display_or_print(results_df)
