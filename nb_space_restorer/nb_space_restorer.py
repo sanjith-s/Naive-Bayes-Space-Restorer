@@ -395,7 +395,7 @@ class NBSpaceRestorer():
         self.current_grid_search()['param_combos'] = \
             {i: pc for i, pc in enumerate(param_combos)}
         self.current_grid_search()['results'] = \
-            {i: None for i in self.current_grid_search().keys()}
+            {i: None for i in self.current_grid_search()['param_combos'].keys()}
         self.run_grid_search(ref, input)
 
     # ====================
