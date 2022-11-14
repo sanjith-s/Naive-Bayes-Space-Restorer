@@ -407,7 +407,7 @@ class NBSpaceRestorer():
     def run_grid_search(self, ref: List[str], input: List[str]):
 
         param_combos = self.current_grid_search()['param_combos']
-        for i, parameters in param_combos.keys():
+        for i, parameters in param_combos.items():
             try_clear_output()
             if self.current_grid_search()['results'][i] is not None:
                 print(MESSAGE_SKIPPING_PARAMS.format(i=i))
