@@ -27,38 +27,35 @@ LAMBDA_DEFAULT = 10.0
 METRIC_TO_OPTIMIZE_DEFAULT = 'F-score'
 MIN_OR_MAX_DEFAULT = 'max'
 
-ERROR_FOLDER_EXISTS = """\
-There is already a NB Space Restorer at this path. \
-Either choose a new path, or load the existing NB Space Restorer"""
-ERROR_MIN_OR_MAX = """
+ERROR_MIN_OR_MAX = """\
 min_or_max should be one of either "min" or "max"
 """
 
 MESSAGE_FINISHED_LOADING = "Finished loading model."
-MESSAGE_GRID_SEARCH_INCOMPLETE = """
+MESSAGE_GRID_SEARCH_INCOMPLETE = """\
 Grid search {grid_search_name} is incomplete. There are {num_untested} \
 parameter combinations that have not been tested. To resume the grid \
 search, call the run_grid_search method with the same reference and \
 input texts you used when you added the grid search."""
-MESSAGE_OPTIMAL_PARAMS = """
+MESSAGE_OPTIMAL_PARAMS = """\
 Optimal hyperparameter values based on the results of the current grid
 search are L={L} and lambda={lambda_}. Run set_optimal_params to set these
 values for the current model.
 """
 MESSAGE_SAVED = "Model saved to {}."
-MESSAGE_L_SET = """
+MESSAGE_L_SET = """\
 The value of the hyperparameter L was set to {L}"""
-MESSAGE_LAMBDA_SET = """
+MESSAGE_LAMBDA_SET = """\
 The value of the hyperparameter lambda was set to {lambda}"""
-MESSAGE_METRIC_TO_OPTIMIZE_SET = """
+MESSAGE_METRIC_TO_OPTIMIZE_SET = """\
 The metric to optimize was set to {metric_to_optimize}"""
-MESSAGE_MIN_OR_MAX_SET = """
+MESSAGE_MIN_OR_MAX_SET = """\
 The setting of whether to minimize or maximize the optimization
 metric was set to: {min_or_max}"""
 MESSAGE_SKIPPING_PARAMS = """\
 Skipping parameter combination at index {i} because results \
 are already in the grid search log."""
-MESSAGE_TESTED_SO_FAR = """
+MESSAGE_TESTED_SO_FAR = """\
 {completed}/{total} parameter combinations tested so far."""
 MESSAGE_TRAINING_COMPLETE = "Training complete."
 
@@ -83,10 +80,6 @@ class NBSpaceRestorer():
             of 'banana'). Defaults to True.
           save_path (Optional[str], optional):
             The path to a pickle file to save the model to. Defaults to None.
-
-        Raises:
-          ValueError:
-            If the folder specified in save_folder already exists.
         """
 
         self.save_path = save_path
@@ -571,11 +564,13 @@ class NBSpaceRestorer():
                            min_or_max: Optional[str] = None
                            ) -> Tuple[int, int]:
 
-        df = self.optimal_parameters_df().reset_index()
         self.set_metric_to_optimize(metric_to_optimize)
         self.set_min_or_max(min_or_max)
+        df = self.optimal_parameters_df()
+        display_or_print(df)
+        df = df.reset_index()
         L = df.iloc[0]['L']
-        lambda_ = df.iloc[0]['lambda_']
+        lambda_ = df.iloc[0]['lambda']
         print(MESSAGE_OPTIMAL_PARAMS.format(
             L=L,
             lambda_=lambda_
