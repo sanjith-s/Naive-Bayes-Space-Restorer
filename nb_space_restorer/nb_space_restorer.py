@@ -4,18 +4,27 @@ Defines the NBSpaceRestorer class"""
 
 import operator
 import os
+import time
 from collections import Counter
 from functools import lru_cache, reduce
 from math import log10
 from typing import List, Optional, Tuple, Union
+import pandas as pd
 
 import nltk
 import psutil
+from fre import FeatureRestorationEvaluator
+from sklearn.model_selection import ParameterGrid
 
-from nb_space_restorer.nb_helper import (get_tqdm, load_pickle,
-                                         mk_dir_if_does_not_exist, save_pickle)
+from nb_space_restorer.nb_helper import (display_or_print, get_tqdm,
+                                         load_pickle, mk_dir_if_does_not_exist,
+                                         save_pickle, try_clear_output)
 from nb_space_restorer.nb_space_restorer_grid_search import \
     NBSpaceRestorerGridSearch
+
+MESSAGE_SKIPPING_PARAMS = """\
+Skipping parameter combination at index {i} because results \
+are already in the grid search log."""
 
 tqdm_ = get_tqdm()
 
@@ -70,7 +79,7 @@ class NBSpaceRestorer():
                 for first_word, second_word in list(nltk.bigrams(words))
             ]
             self.bigram_freqs.update(bigrams)
-        self.grid_searches = []
+        self.grid_searches = {}
         self.get_pdists()
         print(MESSAGE_TRAINING_COMPLETE)
         self.save()
@@ -372,35 +381,66 @@ class NBSpaceRestorer():
                         lambda_: List[float],
                         ref: List[str],
                         input: List[str]):
-        """Add a new grid search to the model to ascertain optimal
-        hyperparameters for inference
 
-        Args:
-          grid_search_name (str):
-            The name of the new grid search. Must be a valid folder
-            name if the model has a save folder.
-          L (List[int]):
-            List of candidate values for L (e.g. [18, 20, 22])
-          lambda_ (List[float]):
-            List of candidate values for lambda_ (e.g. [8.0, 10.0, 12.0])
-          ref (List[str]):
-            List of reference strings (documents with spaces)
-          input (List[str]):
-            List of input strings (documents without spaces)
-        """
+        self.grid_searches[grid_search_name] = {}
+        self.current_grid_search_name = grid_search_name
+        self.current_grid_search().param_values = {
+            'L': L,
+            'lambda': lambda_
+        }
+        param_combos = list(ParameterGrid({
+            'L': L,
+            'lambda': lambda_
+        }))
+        self.current_grid_search().param_combos = \
+            {i: pc for i, pc in enumerate(param_combos)}
+        self.current_grid_search().results = \
+            {i: None for i in self.current_grid_search().keys()}
+        self.run_grid_search(ref, input)
 
-        attrs = locals()
-        del attrs['self']
-        self.grid_search = NBSpaceRestorerGridSearch(self, **attrs)
+    # ====================
+    def current_grid_search(self):
+
+        return self.grid_searches[self.current_grid_search_name]
+
+    # ====================
+    def run_grid_search(self, ref: List[str], input: List[str]):
+
+        for i, parameters in enumerate(self.current_grid_search().param_combos):
+            try_clear_output()
+            if self.current_grid_search()[i] is not None:
+                print(MESSAGE_SKIPPING_PARAMS.format(i=i))
+                continue
+            L = parameters['L']
+            lambda_ = parameters['lambda']
+            print('L =', L, '; lambda =', lambda_)
+            start_time = time.time()
+            hyp = self.restore(self.input, L=L, lambda_=lambda_)
+            evaluator = FeatureRestorationEvaluator(
+                self.ref,
+                hyp,
+                capitalization=False,
+                feature_chars=' ',
+                get_wer_info_on_init=False
+            )
+            prf = evaluator.get_prfs()[' ']
+            time_taken = time.time() - start_time
+            self.current_grid_search().results[i] = {
+                'i': i, 'L': L, 'lambda': lambda_,
+                **prf, 'Time': time_taken
+            }
+            self.display_current_grid_search_results()
+            self.restore_chunk.cache_clear()
+
+    # ====================
+    def display_current_grid_search_results(self):
+
+        results = self.current_grid_search().results
+        results_list = pd.DataFrame(results)
+        display_or_print(results_list)
 
     # ====================
     def load_grid_search(self,
                          grid_search_name: str):
 
-        self.grid_search = \
-            NBSpaceRestorerGridSearch.load(self, grid_search_name)
-
-    # ====================
-    def grid_search_path(self):
-
-        return os.path.join(self.root_folder, GRID_SEARCH_PATH_NAME)
+        self.current_grid_search_name = grid_search_name
