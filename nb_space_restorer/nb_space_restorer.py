@@ -19,15 +19,16 @@ from nb_space_restorer.nb_space_restorer_grid_search import \
 
 tqdm_ = get_tqdm()
 
-FREQS_FNAME = 'FREQS.pickle'
-GRID_SEARCH_PATH_NAME = 'grid_searches'
 MAX_CACHE_SIZE = 10_000_000
+L_DEFAULT = 20
+LAMBDA_DEFAULT = 10.0
 
 ERROR_FOLDER_EXISTS = """\
 There is already a NB Space Restorer at this path. \
 Either choose a new path, or load the existing NB Space Restorer"""
 MESSAGE_FINISHED_LOADING = "Finished loading model."
 MESSAGE_TRAINING_COMPLETE = "Training complete."
+MESSAGE_SAVED = "Model saved to {}."
 
 
 # ====================
@@ -37,7 +38,7 @@ class NBSpaceRestorer():
     def __init__(self,
                  train_texts: list,
                  ignore_case: bool = True,
-                 save_folder: Optional[str] = None):
+                 save_path: Optional[str] = None):
         """Initalize and train an instance of the class.
 
         Args:
@@ -48,20 +49,15 @@ class NBSpaceRestorer():
             Whether or not to ignore case during training (so that e.g.
             'banana', 'Banana', and 'BANANA' are all counted as instances
             of 'banana'). Defaults to True.
-          save_folder (Optional[str], optional):
-            If specified, model assets are saved to the folder at the path
-            specified so that the model can be loaded later. Defaults to None.
+          save_path (Optional[str], optional):
+            The path to a pickle file to save the model to. Defaults to None.
 
         Raises:
           ValueError:
             If the folder specified in save_folder already exists.
         """
 
-        if save_folder:
-            if os.path.exists(save_folder):
-                raise ValueError(ERROR_FOLDER_EXISTS)
-            mk_dir_if_does_not_exist(save_folder)
-            self.root_folder = save_folder
+        self.save_path = save_path
         self.unigram_freqs: Counter = Counter()
         self.bigram_freqs: Counter = Counter()
         for text in train_texts:
@@ -74,59 +70,41 @@ class NBSpaceRestorer():
                 for first_word, second_word in list(nltk.bigrams(words))
             ]
             self.bigram_freqs.update(bigrams)
-        freqs = {
-            'unigram_freqs': self.unigram_freqs,
-            'bigram_freqs': self.bigram_freqs
-        }
-        if hasattr(self, 'root_folder'):
-            save_pickle(freqs, self.freqs_path())
-        print(MESSAGE_TRAINING_COMPLETE)
+        self.grid_searches = []
         self.get_pdists()
+        print(MESSAGE_TRAINING_COMPLETE)
+        self.save()
+
+    # ====================
+    def save(self):
+        """If self.save_path is defined, save the model attributes to that
+        path
+        """
+
+        if self.save_path is not None:
+            save_pickle(self.__dict__, self.save_path)
+            print(MESSAGE_SAVED.format(self.save_path))
 
     # ====================
     @classmethod
-    def load(cls, load_folder: str) -> 'NBSpaceRestorer':
+    def load(cls, load_path: str) -> 'NBSpaceRestorer':
         """Load a previously saved instance of the class.
 
         Args:
-          load_folder (str):
-            The root folder that contains the instance assets
-            (the same path that was passed as save_folder when the
-            class instance was initialized.)
+          load_path (str): _description_
+            The path to the pickle file that contains the model
+            attributes
 
         Returns:
           NBSpaceRestorer:
-            The loaded class instance.
+            The loaded class instance
         """
 
         self = cls.__new__(cls)
-        self.root_folder = load_folder
-        self.unigram_freqs, self.bigram_freqs = \
-            self.get_freqs()
+        self.__dict__ = load_pickle(load_path)
+        self.save_path = load_path
         print(MESSAGE_FINISHED_LOADING)
-        self.get_pdists()
         return self
-
-    # ====================
-    def set_L(self, L: int):
-
-        self.L = L
-
-    # ====================
-    def set_lambda_(self, lambda_: float):
-
-        self.lambda_ = lambda_
-
-    # ====================
-    def freqs_path(self):
-
-        return os.path.join(self.root_folder, FREQS_FNAME)
-
-    # ====================
-    def get_freqs(self):
-
-        freqs = load_pickle(self.freqs_path())
-        return freqs['unigram_freqs'], freqs['bigram_freqs']
 
     # ====================
     def get_pdists(self):
