@@ -384,7 +384,7 @@ class NBSpaceRestorer():
 
         self.grid_searches[grid_search_name] = {}
         self.current_grid_search_name = grid_search_name
-        self.current_grid_search().param_values = {
+        self.current_grid_search()['param_values'] = {
             'L': L,
             'lambda': lambda_
         }
@@ -392,9 +392,9 @@ class NBSpaceRestorer():
             'L': L,
             'lambda': lambda_
         }))
-        self.current_grid_search().param_combos = \
+        self.current_grid_search()['param_combos'] = \
             {i: pc for i, pc in enumerate(param_combos)}
-        self.current_grid_search().results = \
+        self.current_grid_search()['results'] = \
             {i: None for i in self.current_grid_search().keys()}
         self.run_grid_search(ref, input)
 
@@ -406,7 +406,8 @@ class NBSpaceRestorer():
     # ====================
     def run_grid_search(self, ref: List[str], input: List[str]):
 
-        for i, parameters in enumerate(self.current_grid_search().param_combos):
+        param_combos = self.current_grid_search()['param_combos']
+        for i, parameters in param_combos.keys():
             try_clear_output()
             if self.current_grid_search()[i] is not None:
                 print(MESSAGE_SKIPPING_PARAMS.format(i=i))
@@ -435,7 +436,7 @@ class NBSpaceRestorer():
     # ====================
     def display_current_grid_search_results(self):
 
-        results = self.current_grid_search().results
+        results = self.current_grid_search()['results']
         results_list = pd.DataFrame(results)
         display_or_print(results_list)
 
