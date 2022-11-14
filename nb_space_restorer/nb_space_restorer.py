@@ -353,6 +353,17 @@ class NBSpaceRestorer():
                 })
             return restored
 
+    # ====================
+    def set_L(self, L: int):
+
+        self.L = L
+
+    # ====================
+    def set_lambda(self, lambda_: float):
+
+        self.lambda_ = lambda_
+    
+
     # === GRID SEARCH ===
 
     # ====================
