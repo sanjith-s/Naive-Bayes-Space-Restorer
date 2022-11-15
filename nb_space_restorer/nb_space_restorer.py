@@ -117,13 +117,18 @@ class NBSpaceRestorer():
 
     # ====================
     @classmethod
-    def load(cls, load_path: str) -> 'NBSpaceRestorer':
+    def load(cls,
+             load_path: str,
+             read_only: bool = False) -> 'NBSpaceRestorer':
         """Load a previously saved instance of the class.
 
         Args:
-          load_path (str): _description_
+          load_path (str):
             The path to the pickle file that contains the model
             attributes
+          read_only (bool, optional):
+            If set to True, the model will be loaded but changes made after
+            loading will not be written back to the pickle file.
 
         Returns:
           NBSpaceRestorer:
@@ -132,7 +137,10 @@ class NBSpaceRestorer():
 
         self = cls.__new__(cls)
         self.__dict__ = load_pickle(load_path)
-        self.save_path = load_path
+        if read_only is True:
+            self.save_path = None
+        else:
+            self.save_path = load_path
         print(MESSAGE_FINISHED_LOADING)
         self.save()
         return self
