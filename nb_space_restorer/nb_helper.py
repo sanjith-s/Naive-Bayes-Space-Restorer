@@ -1,6 +1,7 @@
 import os
 import pickle
 from typing import Any
+import urllib
 
 from tqdm import tqdm as non_notebook_tqdm
 from tqdm.notebook import tqdm as notebook_tqdm
@@ -64,8 +65,12 @@ def save_pickle(data: Any, fp: str):
 def load_pickle(fp: str) -> Any:
     """Load a .pickle file and return the data"""
 
-    with open(fp, 'rb') as f:
-        unpickled = pickle.load(f)
+    if 'http' in fp:
+        with urllib.request.urlopen(fp) as f:
+            unpickled = pickle.load(f)
+    else:
+        with open(fp, 'rb') as f:
+            unpickled = pickle.load(f)
     return unpickled
 
 
