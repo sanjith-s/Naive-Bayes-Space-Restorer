@@ -385,7 +385,7 @@ class NBSpaceRestorer():
 
         if L is None:
             return
-        self.L = L
+        self.L = int(L)
         if self.running_grid_search is False:
             print(MESSAGE_L_SET.format(L=L))
             self.save()
@@ -395,7 +395,7 @@ class NBSpaceRestorer():
 
         if lambda_ is None:
             return
-        self.lambda_ = lambda_
+        self.lambda_ = float(lambda_)
         if self.running_grid_search is False:
             print(MESSAGE_LAMBDA_SET.format(lambda_=lambda_))
             self.save()
@@ -566,8 +566,8 @@ class NBSpaceRestorer():
         # There may be multiple optimal rows. Just return L and lambda
         # from the first optimal row.
         optimal_rows = optimal_rows.reset_index()
-        L = optimal_rows.iloc[0]['L']
-        lambda_ = optimal_rows.iloc[0]['lambda']
+        L = int(optimal_rows.iloc[0]['L'])
+        lambda_ = float(optimal_rows.iloc[0]['lambda'])
         return optimal_rows, (L, lambda_)
 
     # ====================
