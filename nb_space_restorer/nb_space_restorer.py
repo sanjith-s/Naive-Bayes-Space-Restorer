@@ -572,7 +572,7 @@ class NBSpaceRestorer():
 
         self.set_metric_to_optimize(metric_to_optimize)
         self.set_min_or_max(min_or_max)
-        df, params = self.optimal_params_df()
+        df, params = self.optimal_params()
         display_or_print(df)
         df = df.reset_index()
         L, lambda_ = params
