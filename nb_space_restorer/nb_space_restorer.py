@@ -638,7 +638,6 @@ class NBSpaceRestorer():
         """Set the L and lambda_ attributes of the class instances to the
         optimal hyperparameters for the model based on the values of the
         metric_to_optimize and min_or_max attributes of the class instance.
-
         If there is more than one hyperparameter combination that produces the
         best result for metric_to_optimize, the one that was tested first will
         be selected.
