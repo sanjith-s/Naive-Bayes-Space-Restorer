@@ -34,7 +34,7 @@ min_or_max should be one of either "min" or "max"
 MESSAGE_FINISHED_LOADING = "Finished loading model."
 MESSAGE_GRID_SEARCH_INCOMPLETE = """\
 Grid search {grid_search_name} is incomplete. There are {num_untested} \
-parameter combinations that have not been tested. To resume the grid \
+parameter combination(s) that have not been tested. To resume the grid \
 search, call the run_grid_search method with the same reference and \
 input texts you used when you added the grid search."""
 MESSAGE_OPTIMAL_PARAMS = """\
@@ -381,16 +381,20 @@ class NBSpaceRestorer():
             return restored
 
     # ====================
-    def set_L(self, L: int):
+    def set_L(self, L: Union[int, None]):
 
+        if L is None:
+            return
         self.L = L
         if self.running_grid_search is False:
             print(MESSAGE_L_SET.format(L=L))
             self.save()
 
     # ====================
-    def set_lambda(self, lambda_: float):
+    def set_lambda(self, lambda_: Union[float, None]):
 
+        if lambda_ is None:
+            return
         self.lambda_ = lambda_
         if self.running_grid_search is False:
             print(MESSAGE_LAMBDA_SET.format(lambda_=lambda_))
