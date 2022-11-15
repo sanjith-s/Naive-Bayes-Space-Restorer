@@ -586,7 +586,8 @@ class NBSpaceRestorer():
                            metric_to_optimize: Optional[str] = None,
                            min_or_max: Optional[str] = None):
 
-        L, lambda_ = self.optimal_params(metric_to_optimize, min_or_max)
+        _, params = self.optimal_params(metric_to_optimize, min_or_max)
+        L, lambda_ = params
         self.set_L(L)
         self.set_lambda(lambda_)
         self.save()
