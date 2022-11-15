@@ -46,7 +46,7 @@ MESSAGE_SAVED = "Model saved to {}."
 MESSAGE_L_SET = """\
 The value of the hyperparameter L was set to: {L}."""
 MESSAGE_LAMBDA_SET = """\
-The value of the hyperparameter lambda was set to: {lambda}."""
+The value of the hyperparameter lambda was set to: {lambda_}."""
 MESSAGE_METRIC_TO_OPTIMIZE_SET = """\
 The metric to optimize was set to: '{metric_to_optimize}'."""
 MESSAGE_MIN_OR_MAX_SET = """\
