@@ -560,7 +560,7 @@ class NBSpaceRestorer():
     def optimal_params(self,
                        metric_to_optimize: Optional[str] = None,
                        min_or_max: Optional[str] = None
-                       ) -> Tuple[pd.DataFrame, Tuple[int, int]]:
+                       ) -> Tuple[pd.DataFrame, Tuple[int, int]]:                       
 
         df = self.grid_search_results_df()
         self.set_metric_to_optimize(metric_to_optimize)
@@ -582,6 +582,25 @@ class NBSpaceRestorer():
     def show_optimal_params(self,
                             metric_to_optimize: Optional[str] = None,
                             min_or_max: Optional[str] = None):
+        """Display the rows from the grid search results table with the best
+        results based on the values of the metric_to_optimize and min_or_max
+        attributes of the class instance, and the values of the hyperparameters
+        that produce those results.
+        If there is more than one hyperparameter combination that produces the
+        best result for metric_to_optimize, the one that was tested first will
+        be selected.
+
+        Args:
+          metric_to_optimize (Optional[str], optional):
+            If provided, the metric_to_optimize attribute of the class
+            instance will be set to this value before finding the optimal
+            hyperparameter values.
+            Defaults to None.
+          min_or_max (Optional[str], optional):
+            If provided, the min_or_max attribute of the class
+            instance will be set to this value before finding the optimal
+            hyperparameter values. Defaults to None.
+        """
 
         self.set_metric_to_optimize(metric_to_optimize)
         self.set_min_or_max(min_or_max)
@@ -598,6 +617,25 @@ class NBSpaceRestorer():
     def set_optimal_params(self,
                            metric_to_optimize: Optional[str] = None,
                            min_or_max: Optional[str] = None):
+        """Set the L and lambda_ attributes of the class instances to the
+        optimal hyperparameters for the model based on the values of the
+        metric_to_optimize and min_or_max attributes of the class instance.
+
+        If there is more than one hyperparameter combination that produces the
+        best result for metric_to_optimize, the one that was tested first will
+        be selected.
+
+        Args:
+          metric_to_optimize (Optional[str], optional):
+            If provided, the metric_to_optimize attribute of the class
+            instance will be set to this value before finding the optimal
+            hyperparameter values.
+            Defaults to None.
+          min_or_max (Optional[str], optional):
+            If provided, the min_or_max attribute of the class
+            instance will be set to this value before finding the optimal
+            hyperparameter values. Defaults to None.
+        """                           
 
         _, params = self.optimal_params(metric_to_optimize, min_or_max)
         L, lambda_ = params
