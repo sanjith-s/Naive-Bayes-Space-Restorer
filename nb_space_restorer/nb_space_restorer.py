@@ -440,6 +440,24 @@ class NBSpaceRestorer():
                         lambda_: List[float],
                         ref: List[str],
                         input: List[str]):
+        """Add and start running a grid search to find optimal hyperparameters
+        for the model.
+
+        Args:
+          grid_search_name (str):
+            A name for the grid search (e.g. 'grid_search_1')
+          L (List[int]):
+            A list of values for the hyperparameter L.
+            (E.g. [18, 20, 22])
+          lambda_ (List[float]):
+            A list of values for the hyperparameter lambda.
+            (E.g. [8.0, 10.0, 12.0])
+          ref (List[str]):
+            A list of reference documents to use in the grid search
+          input (List[str]):
+            A list of input documents to use in the grid search. Should be the
+            same as the reference documents, but with spaces removed.
+        """
 
         self.grid_searches[grid_search_name] = {}
         self.current_grid_search_name = grid_search_name

@@ -81,91 +81,23 @@ restorer = NBSpaceRestorer(
                         lambda_: List[float],
                         ref: List[str],
                         input: List[str]):
+        """Add and start running a grid search to find optimal hyperparameters
+        for the model.
 
-        self.grid_searches[grid_search_name] = {}
-        self.current_grid_search_name = grid_search_name
-        self.current_grid_search()['param_values'] = {
-            'L': L,
-            'lambda': lambda_
-        }
-        param_combos = list(ParameterGrid({
-            'L': L,
-            'lambda': lambda_
-        }))
-        self.current_grid_search()['param_combos'] = \
-            {i: pc for i, pc in enumerate(param_combos)}
-        self.current_grid_search()['results'] = \
-            {i: None for i in range(len(param_combos))}
-        self.save()
-        self.run_grid_search(ref, input)
-
-    # ====================
-    def load_grid_search(self, grid_search_name: str):
-
-        self.grid_search_name = grid_search_name
-        completed, total = self.param_combos_completed()
-        if total > completed:
-            print(MESSAGE_GRID_SEARCH_INCOMPLETE.format(
-                grid_search_name=grid_search_name,
-                num_untested=total-completed
-            ))
-
-    # ====================
-    def current_grid_search(self):
-
-        return self.grid_searches[self.current_grid_search_name]
-
-    # ====================
-    def run_grid_search(self, ref: List[str], input: List[str]):
-
-        param_combos = self.current_grid_search()['param_combos']
-        L_start = self.L
-        lambda_start = self.lambda_
-        for i, parameters in param_combos.items():
-            self.running_grid_search = True
-            try_clear_output()
-            display_or_print(self.grid_search_results_df())
-            self.show_param_combos_completed()
-            print()
-            if self.current_grid_search()['results'][i] is not None:
-                print(MESSAGE_SKIPPING_PARAMS.format(i=i))
-                self.running_grid_search = False
-                continue
-            L = parameters['L']
-            lambda_ = parameters['lambda']
-            print('L =', L, '; lambda =', lambda_)
-            start_time = time.time()
-            hyp = self.restore(input, L=L, lambda_=lambda_)
-            evaluator = FeatureRestorationEvaluator(
-                ref,
-                hyp,
-                capitalization=False,
-                feature_chars=' ',
-                get_wer_info_on_init=False
-            )
-            prf = evaluator.get_prfs()[' ']
-            time_taken = time.time() - start_time
-            self.current_grid_search()['results'][i] = {
-                'i': i, 'L': L, 'lambda': lambda_,
-                **prf, 'Time (s)': time_taken
-            }
-            self.restore_chunk.cache_clear()
-            self.set_L(L_start)
-            self.set_lambda(lambda_start)
-            self.running_grid_search = False
-            self.save()
-        try_clear_output()
-        display_or_print(self.grid_search_results_df())
-        self.show_param_combos_completed()
-
-    # ====================
-    def grid_search_results_df(self) -> pd.DataFrame:
-        """Get the results of the current grid search.
-
-        Returns:
-          pd.DataFrame
-            A pandas dataframe containing the results for all the
-            parameter combinations tested so far.
+        Args:
+          grid_search_name (str):
+            A name for the grid search (e.g. 'grid_search_1')
+          L (List[int]):
+            A list of values for the hyperparameter L.
+            (E.g. [18, 20, 22])
+          lambda_ (List[float]):
+            A list of values for the hyperparameter lambda.
+            (E.g. [8.0, 10.0, 12.0])
+          ref (List[str]):
+            A list of reference documents to use in the grid search
+          input (List[str]):
+            A list of input documents to use in the grid search. Should be the
+            same as the reference documents, but with spaces removed.
         """
 ```
 
@@ -185,7 +117,7 @@ restorer.add_grid_search(
 
 ### Show optimal hyperparameters from the current grid search
 
-#### `NBSpaceRestorer.show_optimal_params
+#### `NBSpaceRestorer.show_optimal_params`
 
 ```python
     # ====================
@@ -265,73 +197,34 @@ restorer.set_optimal_params()
 
 ```python
     # ====================
-    def load_grid_search(self, grid_search_name: str):
+    @classmethod
+    def load(cls,
+             load_path: str,
+             read_only: bool = False) -> 'NBSpaceRestorer':
+        """Load a previously saved instance of the class.
 
-        self.grid_search_name = grid_search_name
-        completed, total = self.param_combos_completed()
-        if total > completed:
-            print(MESSAGE_GRID_SEARCH_INCOMPLETE.format(
-                grid_search_name=grid_search_name,
-                num_untested=total-completed
-            ))
-
-    # ====================
-    def current_grid_search(self):
-
-        return self.grid_searches[self.current_grid_search_name]
-
-    # ====================
-    def run_grid_search(self, ref: List[str], input: List[str]):
-
-        param_combos = self.current_grid_search()['param_combos']
-        L_start = self.L
-        lambda_start = self.lambda_
-        for i, parameters in param_combos.items():
-            self.running_grid_search = True
-            try_clear_output()
-            display_or_print(self.grid_search_results_df())
-            self.show_param_combos_completed()
-            print()
-            if self.current_grid_search()['results'][i] is not None:
-                print(MESSAGE_SKIPPING_PARAMS.format(i=i))
-                self.running_grid_search = False
-                continue
-            L = parameters['L']
-            lambda_ = parameters['lambda']
-            print('L =', L, '; lambda =', lambda_)
-            start_time = time.time()
-            hyp = self.restore(input, L=L, lambda_=lambda_)
-            evaluator = FeatureRestorationEvaluator(
-                ref,
-                hyp,
-                capitalization=False,
-                feature_chars=' ',
-                get_wer_info_on_init=False
-            )
-            prf = evaluator.get_prfs()[' ']
-            time_taken = time.time() - start_time
-            self.current_grid_search()['results'][i] = {
-                'i': i, 'L': L, 'lambda': lambda_,
-                **prf, 'Time (s)': time_taken
-            }
-            self.restore_chunk.cache_clear()
-            self.set_L(L_start)
-            self.set_lambda(lambda_start)
-            self.running_grid_search = False
-            self.save()
-        try_clear_output()
-        display_or_print(self.grid_search_results_df())
-        self.show_param_combos_completed()
-
-    # ====================
-    def grid_search_results_df(self) -> pd.DataFrame:
-        """Get the results of the current grid search.
+        Args:
+          load_path (str):
+            The path to the pickle file that contains the model
+            attributes
+          read_only (bool, optional):
+            If set to True, the model will be loaded but changes made after
+            loading will not be written back to the pickle file.
 
         Returns:
-          pd.DataFrame
-            A pandas dataframe containing the results for all the
-            parameter combinations tested so far.
+          NBSpaceRestorer:
+            The loaded class instance
         """
+
+        self = cls.__new__(cls)
+        self.__dict__ = load_pickle(load_path)
+        if read_only is True:
+            self.save_path = None
+        else:
+            self.save_path = load_path
+        print(MESSAGE_FINISHED_LOADING)
+        self.save()
+        return self
 ```
 
 #### Example usage:
