@@ -476,6 +476,7 @@ class NBSpaceRestorer():
             print()
             if self.current_grid_search()['results'][i] is not None:
                 print(MESSAGE_SKIPPING_PARAMS.format(i=i))
+                self.running_grid_search = False
                 continue
             L = parameters['L']
             lambda_ = parameters['lambda']
