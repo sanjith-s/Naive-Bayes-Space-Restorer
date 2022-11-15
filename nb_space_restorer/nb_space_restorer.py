@@ -44,14 +44,14 @@ values for the current model.
 """
 MESSAGE_SAVED = "Model saved to {}."
 MESSAGE_L_SET = """\
-The value of the hyperparameter L was set to {L}"""
+The value of the hyperparameter L was set to: {L}."""
 MESSAGE_LAMBDA_SET = """\
-The value of the hyperparameter lambda was set to {lambda}"""
+The value of the hyperparameter lambda was set to: {lambda}."""
 MESSAGE_METRIC_TO_OPTIMIZE_SET = """\
-The metric to optimize was set to {metric_to_optimize}"""
+The metric to optimize was set to: '{metric_to_optimize}'."""
 MESSAGE_MIN_OR_MAX_SET = """\
 The setting of whether to minimize or maximize the optimization
-metric was set to: {min_or_max}"""
+metric was set to: {min_or_max}."""
 MESSAGE_SKIPPING_PARAMS = """\
 Skipping parameter combination at index {i} because results \
 are already in the grid search log."""
@@ -544,10 +544,10 @@ class NBSpaceRestorer():
         return completed, total
 
     # ====================
-    def optimal_parameters_df(self,
-                              metric_to_optimize: Optional[str] = None,
-                              min_or_max: Optional[str] = None
-                              ) -> pd.DataFrame:
+    def optimal_params(self,
+                       metric_to_optimize: Optional[str] = None,
+                       min_or_max: Optional[str] = None
+                       ) -> Tuple[pd.DataFrame, Tuple[int, int]]:
 
         df = self.grid_search_results_df()
         self.set_metric_to_optimize(metric_to_optimize)
@@ -557,22 +557,25 @@ class NBSpaceRestorer():
             optimal_val = max(metric_vals)
         elif self.min_or_max == 'min':
             optimal_val = min(metric_vals)
-        max_rows = df[df[self.metric_to_optimize] == optimal_val]
-        return max_rows
+        optimal_rows = df[df[self.metric_to_optimize] == optimal_val]
+        # There may be multiple optimal rows. Just return L and lambda
+        # from the first optimal row.
+        optimal_rows = optimal_rows.reset_index()
+        L = optimal_rows.iloc[0]['L']
+        lambda_ = optimal_rows.iloc[0]['lambda']
+        return optimal_rows, (L, lambda_)
 
     # ====================
-    def optimal_parameters(self,
-                           metric_to_optimize: Optional[str] = None,
-                           min_or_max: Optional[str] = None
-                           ) -> Tuple[int, int]:
+    def show_optimal_params(self,
+                            metric_to_optimize: Optional[str] = None,
+                            min_or_max: Optional[str] = None):
 
         self.set_metric_to_optimize(metric_to_optimize)
         self.set_min_or_max(min_or_max)
-        df = self.optimal_parameters_df()
+        df, params = self.optimal_params_df()
         display_or_print(df)
         df = df.reset_index()
-        L = df.iloc[0]['L']
-        lambda_ = df.iloc[0]['lambda']
+        L, lambda_ = params
         print(MESSAGE_OPTIMAL_PARAMS.format(
             L=L,
             lambda_=lambda_
@@ -583,11 +586,10 @@ class NBSpaceRestorer():
                            metric_to_optimize: Optional[str] = None,
                            min_or_max: Optional[str] = None):
 
-        L, lambda_ = self.optimal_parameters(
-            metric_to_optimize, min_or_max
-        )
+        L, lambda_ = self.optimal_params(metric_to_optimize, min_or_max)
         self.set_L(L)
         self.set_lambda(lambda_)
+        self.save()
 
     # ====================
     def show_param_combos_completed(self):
