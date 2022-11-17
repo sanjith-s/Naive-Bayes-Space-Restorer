@@ -1,7 +1,7 @@
 """test_nb_space_restorer.py
 
-Smoke tests to check that operations carried out in interactive demo run
-on sample data without errors."""
+Smoke tests to check that operations carried out in the interactive demo
+run on sample data without errors."""
 
 from nb_space_restorer.nb_space_restorer import NBSpaceRestorer
 import pandas as pd
