@@ -13,7 +13,7 @@ The implementation here allows for easy restoration of spaces to entire datasets
 
 ## Interactive demo
 
-The quickest and best way to get acquainted with the library is through the interactive demo [here](https://colab.research.google.com/drive/1ngcioFhOvS95oSYjkC4kqIYtBZUFygx6?usp=sharing), where you can walk through the steps involved in using the library and clean some sample data from the Ted Talks dataset used in the paper.
+The quickest and best way to get acquainted with the library is through the interactive demo [here](https://colab.research.google.com/drive/1ngcioFhOvS95oSYjkC4kqIYtBZUFygx6?usp=sharing), where you can walk through the steps involved in using the library and train a space restoration model using sample data from the Ted Talks dataset used in the paper.
 
 Alternatively, scroll down for instructions on getting started and basic documentation.
 
@@ -43,7 +43,7 @@ from nb_space_restorer import NBSpaceRestorer
                  train_texts: list,
                  ignore_case: bool = True,
                  save_path: Optional[str] = None):
-        """Initalize and train an instance of the class.
+        """Initialize and train an instance of the class.
 
         Args:
           train_texts (list):
@@ -162,7 +162,7 @@ restorer.show_optimal_params(metric_to_optimize='Recall')
     def set_optimal_params(self,
                            metric_to_optimize: Optional[str] = None,
                            min_or_max: Optional[str] = None):
-        """Set the L and lambda_ attributes of the class instances to the
+        """Set the L and lambda_ attributes of the class instance to the
         optimal hyperparameters for the model based on the values of the
         metric_to_optimize and min_or_max attributes of the class instance.
         If there is more than one hyperparameter combination that produces the

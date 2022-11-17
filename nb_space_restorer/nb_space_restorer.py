@@ -68,7 +68,7 @@ class NBSpaceRestorer():
                  train_texts: list,
                  ignore_case: bool = True,
                  save_path: Optional[str] = None):
-        """Initalize and train an instance of the class.
+        """Initialize and train an instance of the class.
 
         Args:
           train_texts (list):
@@ -635,7 +635,7 @@ class NBSpaceRestorer():
     def set_optimal_params(self,
                            metric_to_optimize: Optional[str] = None,
                            min_or_max: Optional[str] = None):
-        """Set the L and lambda_ attributes of the class instances to the
+        """Set the L and lambda_ attributes of the class instance to the
         optimal hyperparameters for the model based on the values of the
         metric_to_optimize and min_or_max attributes of the class instance.
         If there is more than one hyperparameter combination that produces the
