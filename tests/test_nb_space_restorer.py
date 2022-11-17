@@ -24,6 +24,17 @@ def restorer():
 
 
 # ====================
+@fixture(scope='module')
+def NB_TedTalks():
+
+    restorer_ = NBSpaceRestorer.load(
+        'https://raw.githubusercontent.com/ljdyer/Naive-Bayes-Space-Restorer/main/NB_TedTalks.pickle',
+        read_only=True
+    )
+    yield restorer_
+
+
+# ====================
 def test_init(restorer):
 
     restorer
@@ -51,3 +62,27 @@ def test_load_grid_search(restorer):
 def test_show_optimal_params(restorer):
 
     restorer.show_optimal_params()
+
+
+# ====================
+def test_set_optimal_params(restorer):
+
+    restorer.set_optimal_params()
+
+
+# ====================
+def test_restore(restorer):
+
+    restorer.restore(test_input)
+
+
+# ====================
+def test_load(NB_TedTalks):
+
+    NB_TedTalks
+
+
+# ====================
+def test_restore_with_loaded(NB_TedTalks):
+
+    NB_TedTalks.restore(test_input)
