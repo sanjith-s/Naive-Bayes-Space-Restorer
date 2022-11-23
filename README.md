@@ -214,16 +214,6 @@ restorer.set_optimal_params()
           NBSpaceRestorer:
             The loaded class instance
         """
-
-        self = cls.__new__(cls)
-        self.__dict__ = load_pickle(load_path)
-        if read_only is True:
-            self.save_path = None
-        else:
-            self.save_path = load_path
-        print(MESSAGE_FINISHED_LOADING)
-        self.save()
-        return self
 ```
 
 #### Example usage:
