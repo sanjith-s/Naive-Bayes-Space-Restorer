@@ -2,5 +2,5 @@ nltk
 pandas
 tqdm
 psutil
-sklearn
+scikit-learn
 git+https://github.com/ljdyer/feature-restoration-evaluator.git
