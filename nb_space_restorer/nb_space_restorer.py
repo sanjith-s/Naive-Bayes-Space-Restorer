@@ -9,11 +9,13 @@ from functools import lru_cache, reduce
 from math import log10
 from typing import List, Optional, Tuple, Union
 
-import nltk
+from nltk.util import everygrams
 import pandas as pd
 import psutil
 from fre import FeatureRestorationEvaluator
 from sklearn.model_selection import ParameterGrid
+from scipy.stats import norm
+import numpy as np
 
 from nb_space_restorer.nb_helper import (display_or_print, get_tqdm,
                                          load_pickle, save_pickle,
@@ -47,6 +49,8 @@ MESSAGE_L_SET = """\
 The value of the hyperparameter L was set to: {L}."""
 MESSAGE_LAMBDA_SET = """\
 The value of the hyperparameter lambda was set to: {lambda_}."""
+MESSAGE_FUNCTION_SET = """\
+The value of the hyperparameter lambda was set to: {unknown_function}."""
 MESSAGE_METRIC_TO_OPTIMIZE_SET = """\
 The metric to optimize was set to: '{metric_to_optimize}'."""
 MESSAGE_MIN_OR_MAX_SET = """\
@@ -61,25 +65,38 @@ MESSAGE_TRAINING_COMPLETE = "Training complete."
 
 
 # ====================
-class NBSpaceRestorer():
+class NBSpaceRestorer:
 
     # ====================
     def __init__(self,
                  train_texts: list,
+                 uyir_letters: list[str],
+                 mei_letters: list[str],
                  ignore_case: bool = True,
-                 save_path: Optional[str] = None):
+                 save_path: Optional[str] = None,
+                 max_n_gram: int = 2,
+                 unknown_function: str = 'exponential'):
         """Initialize and train an instance of the class.
 
         Args:
           train_texts (list):
             The list of 'gold standard' documents (running text with spaces)
             on which to train the model.
+          uyir_letters (list):
+            A list of letters that can only appear at the beginning of words
+          mei_letters (list):
+            A list of letters that can never appear at the beginning of words
           ignore_case (bool, optional):
             Whether or not to ignore case during training (so that e.g.
             'banana', 'Banana', and 'BANANA' are all counted as instances
             of 'banana'). Defaults to True.
           save_path (Optional[str], optional):
             The path to a pickle file to save the model to. Defaults to None.
+          max_n_gram (int, optional):
+            The maximum value of N to calculate all N-grams for. Defaults to 2.
+          unknown_function (str, optional):
+            The function to use to predict the probability of an unseen word.
+            Can be 'exponential' or 'gaussian', defaults to 'exponential'
         """
 
         self.save_path = save_path
@@ -88,18 +105,36 @@ class NBSpaceRestorer():
         self.metric_to_optimize = METRIC_TO_OPTIMIZE_DEFAULT
         self.min_or_max = MIN_OR_MAX_DEFAULT
         self.running_grid_search = False
-        self.unigram_freqs: Counter = Counter()
-        self.bigram_freqs: Counter = Counter()
+        self.freqs: Counter = Counter()
+        self.ngram_freqs: Counter = Counter()
+        self.max_n_gram: int = max_n_gram
+
+        self.uyir_letters = uyir_letters.copy()
+        self.mei_letters = mei_letters.copy()
+
+        self.distribution = {}
+        self.distribution_fn = None
+        self.likely_len = 0
+        word_lengths = []
+
         for text in train_texts:
             if ignore_case:
                 text = text.lower()
             words = text.split()
-            self.unigram_freqs.update(words)
-            bigrams = [
-                f'{first_word}_{second_word}'
-                for first_word, second_word in list(nltk.bigrams(words))
-            ]
-            self.bigram_freqs.update(bigrams)
+            for word in words:
+                word_lengths.append(len(word))
+
+            grams = list(everygrams(words, max_len=max_n_gram))
+            self.freqs.update(grams)
+            self.ngram_freqs.update([len(gram) for gram in grams])
+
+        self.distribution_fn = norm(np.mean(word_lengths), np.std(word_lengths))
+        self.likely_len = np.mean(word_lengths)
+        for length in range(1, 20):
+            self.distribution[length] = self.distribution_fn.pdf(length)
+
+        self.unknown_function = unknown_function
+
         self.grid_searches = {}
         self.get_pdists()
         print(MESSAGE_TRAINING_COMPLETE)
@@ -143,21 +178,16 @@ class NBSpaceRestorer():
             self.save_path = load_path
         print(MESSAGE_FINISHED_LOADING)
         self.save()
+
         return self
 
     # ====================
     def get_pdists(self):
-        """Get unigram and bigram probability distributions from unigram
-        and bigram frequencies"""
+        """Get N-gram probability distributions from N-gram
+        frequencies"""
 
-        # Get total numbers of unigrams and bigrams
-        self.N = sum(self.unigram_freqs.values())
-        self.N2 = sum(self.bigram_freqs.values())
-        # Define probability distributions for unigrams and bigrams
-        self.Pdist = {word: freq / self.N
-                      for word, freq in self.unigram_freqs.items()}
-        self.P2dist = {bigram: freq / self.N2
-                       for bigram, freq in self.bigram_freqs.items()}
+        self.PNdist = {gram: freq / self.ngram_freqs[len(gram)]
+                       for gram, freq in self.freqs.items()}
 
     # ====================
     def splits(self, text: str) -> List[tuple]:
@@ -171,9 +201,14 @@ class NBSpaceRestorer():
           List[tuple]:
             A list of candidate (word, remainder) pairs
         """
+        stop_index = self.L
+        for index, character in enumerate(text[1:self.L]):
+            if character in self.uyir_letters:
+                stop_index = index + 1
+                break
 
         return [
-            (text[:i+1], text[i+1:]) for i in range(min(len(text), self.L))
+            (text[:i + 1], text[i + 1:]) for i in range(min(len(text), stop_index))
         ]
 
     # ====================
@@ -220,30 +255,45 @@ class NBSpaceRestorer():
             The NB probability
         """
 
-        if word in self.Pdist:
-            return self.Pdist[word]
+        if (word,) in self.PNdist:
+            return self.PNdist[(word,)]
         else:
             # For unknown words, assign lower probabilities for longer words
-            return self.lambda_/(self.N * 10 ** len(word))
+            if self.unknown_function == 'gaussian':
+                return self.lambda_ / self.ngram_freqs[1] *\
+                                    (self.distribution[len(word)] if len(word)
+                                    in self.distribution else self.distribution_fn(len(word)))
+            else:
+                return self.lambda_ / (self.ngram_freqs[1] * 10 ** (abs(len(word) - self.likely_len) + 1))
 
     # ====================
-    def cPw(self, word: str, prev: str) -> float:
+    # def cPw(self, word: str, prev: str) -> float:
+    def cPw(self, words: tuple[str]) -> float:
         """Get the conditional probability of a word given the previous word.
 
         Args:
-          word (str):
-            The candidate word
-          prev (str):
-            The previous word
+          words (tuple[str]):
+            The candidate word preceded by its previous words
 
         Returns:
             float: The Naive Bayes probability
         """
+        if words[-1][0] in self.mei_letters:
+            return 1e-100
 
-        try:
-            return self.P2dist[prev + '_' + word] / float(self.Pw(prev))
-        except KeyError:
-            return self.Pw(word)
+        if len(words) == 1:
+            return self.Pw(words[0])
+
+        if words in self.freqs and words[:-1] in self.freqs:
+            return self.freqs[words] / self.freqs[words[:-1]]
+        else:
+            return self.cPw(words[1:])
+
+        # try:
+        #     return self.PNdist[words] / self.PNdist[words[:-1]]
+        # except KeyError:
+        #     return self.lambda_ * self.cPw(words[1:])
+        #     # return self.cPw(words[1:])
 
     # ====================
     def combine(self,
@@ -272,7 +322,7 @@ class NBSpaceRestorer():
 
     # ====================
     @lru_cache(maxsize=MAX_CACHE_SIZE)
-    def restore_chunk(self, text_: str, prev='<S>') -> Tuple[float, list]:
+    def restore_chunk(self, text_: str, prev: tuple[str] = None) -> Tuple[float, list]:
         """Restore spaces to a short string of input characters
 
         Will result in RecursionError if length of text_ is more than
@@ -281,8 +331,8 @@ class NBSpaceRestorer():
         Args:
           text_ (str):
             The text to restore spaces to.
-          prev (str, optional):
-            The previous word. Defaults to '<S>'.
+          prev (tuple[str], optional):
+            The previous words. Defaults to ('<S>',) repeated max_n_gram times.
 
         Returns:
           Tuple[float, list]:
@@ -290,11 +340,15 @@ class NBSpaceRestorer():
             words
         """
 
+        if prev is None:
+            prev = ('<S>',) * self.max_n_gram
+
         if not text_:
             return 0.0, []
-        candidates = [self.combine(log10(self.cPw(first, prev)),
+
+        candidates = [self.combine(log10(self.cPw(prev[1:] + (first,))),
                                    first,
-                                   self.restore_chunk(rem, first))
+                                   self.restore_chunk(rem, prev[1:] + (first,)))
                       for first, rem in self.splits(text_)]
         return max(candidates)
 
@@ -321,7 +375,7 @@ class NBSpaceRestorer():
             The document with spaces restored
         """
 
-        chunk_len_chars = 80   # Low enough to avoid recursion errors
+        chunk_len_chars = 80  # Low enough to avoid recursion errors
         all_words = []
         prefix = ''
         chunk_counter = 1
@@ -409,6 +463,16 @@ class NBSpaceRestorer():
             self.save()
 
     # ====================
+    def set_unknown_function(self, unknown_function: Union[str, None]):
+
+        if unknown_function is None:
+            return
+        self.unknown_function = str(unknown_function)
+        if self.running_grid_search is False:
+            print(MESSAGE_FUNCTION_SET.format(unknown_function=unknown_function))
+            self.save()
+
+    # ====================
     def set_metric_to_optimize(self, metric_to_optimize: str):
 
         if metric_to_optimize is None:
@@ -484,7 +548,7 @@ class NBSpaceRestorer():
         if total > completed:
             print(MESSAGE_GRID_SEARCH_INCOMPLETE.format(
                 grid_search_name=grid_search_name,
-                num_untested=total-completed
+                num_untested=total - completed
             ))
 
     # ====================
@@ -578,7 +642,7 @@ class NBSpaceRestorer():
     def optimal_params(self,
                        metric_to_optimize: Optional[str] = None,
                        min_or_max: Optional[str] = None
-                       ) -> Tuple[pd.DataFrame, Tuple[int, int]]:                       
+                       ) -> Tuple[pd.DataFrame, Tuple[int, int]]:
 
         df = self.grid_search_results_df()
         self.set_metric_to_optimize(metric_to_optimize)
@@ -652,7 +716,7 @@ class NBSpaceRestorer():
             If provided, the min_or_max attribute of the class
             instance will be set to this value before finding the optimal
             hyperparameter values. Defaults to None.
-        """                           
+        """
 
         _, params = self.optimal_params(metric_to_optimize, min_or_max)
         L, lambda_ = params
