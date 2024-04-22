@@ -23,7 +23,7 @@ from nb_space_restorer.nb_helper import (display_or_print, get_tqdm,
 
 tqdm_ = get_tqdm()
 
-MAX_CACHE_SIZE = 10_000_000
+MAX_CACHE_SIZE = 1_000_000
 L_DEFAULT = 20
 LAMBDA_DEFAULT = 10.0
 METRIC_TO_OPTIMIZE_DEFAULT = 'F-score'
@@ -264,7 +264,7 @@ class NBSpaceRestorer:
                                     (self.distribution[len(word)] if len(word)
                                     in self.distribution else self.distribution_fn(len(word)))
             else:
-                return self.lambda_ / (self.ngram_freqs[1] * 10 ** (abs(len(word) - self.likely_len) + 1))
+                return self.lambda_ / (self.ngram_freqs[1] * 10 ** (abs(len(word) - self.likely_len)))
 
     # ====================
     # def cPw(self, word: str, prev: str) -> float:
