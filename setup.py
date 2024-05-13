@@ -5,7 +5,7 @@ REQUIREMENTS = [
     'pandas',
     'tqdm',
     'psutil',
-    'sklearn',
+    'scikit-learn',
     'fre @ git+https://github.com/ljdyer/feature-restoration-evaluator.git'
 ]
 
